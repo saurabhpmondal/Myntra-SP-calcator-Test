@@ -2,185 +2,148 @@
 
 import { loadAllData } from "./data-loader.js";
 import { normalizeAllData } from "./normalizer.js";
-import { initCalculator } from "./calculator.js";
 import { renderPricingTable } from "./table.js";
-import { initExport } from "./export.js";
-
-import { STORE, CONFIG } from "./config.js";
 import { renderBrandSummary } from "./brand-summary.js";
+import { solvePrice } from "./pricing-engine.js";
+
+import { STORE } from "./config.js";
 
 let pricingLoaded = false;
-let summaryLoaded = false;
 
-document.addEventListener("DOMContentLoaded", initApp);
+/* INIT */
+document.addEventListener("DOMContentLoaded", init);
 
-async function initApp() {
+async function init() {
   bindTabs();
   bindControls();
-  initCalculator();
-  initExport();
-
-  await refreshApp();
+  await refresh();
 }
 
-async function refreshApp() {
+/* LOAD */
+async function refresh() {
   const ok = await loadAllData();
   if (!ok) return;
 
   normalizeAllData();
-
-  fillBrands();
-  fillTargets();
-  syncPricingModeUi();
-
-  STORE.ui.rowLimit = 50;
-
   pricingLoaded = false;
-  summaryLoaded = false;
-
-  setMasterMessage("Click Generate Pricing");
-  setSummaryMessage("Run pricing first");
 }
 
-/* ---------------- CONTROLS ---------------- */
+/* CONTROLS */
 function bindControls() {
-  document
-    .getElementById("refreshBtn")
-    ?.addEventListener("click", refreshApp);
 
-  document
-    .getElementById("brandFilter")
-    ?.addEventListener("change", rerender);
-
-  document
-    .getElementById("profitTarget")
-    ?.addEventListener("change", rerender);
-
-  document
-    .getElementById("pricingMode")
-    ?.addEventListener("change", e => {
-      CONFIG.ROUNDING.MODE = e.target.value;
-      rerender();
-    });
-
-  document
-    .getElementById("generatePricingBtn")
+  document.getElementById("generatePricingBtn")
     ?.addEventListener("click", () => {
-      STORE.ui.rowLimit = 50;
       renderPricingTable();
       pricingLoaded = true;
-      summaryLoaded = false;
     });
 
-  document
-    .getElementById("loadMoreBtn")
-    ?.addEventListener("click", () => {
-      STORE.ui.rowLimit += 50;
-      renderPricingTable();
-    });
+  document.getElementById("generateMrpBtn")
+    ?.addEventListener("click", generateMrp);
+
+  document.getElementById("verifyBtn")
+    ?.addEventListener("click", verifyFile);
 }
 
-function rerender() {
-  if (!pricingLoaded) return;
-
-  STORE.ui.rowLimit = 50;
-  renderPricingTable();
-  summaryLoaded = false;
-}
-
-/* ---------------- TABS ---------------- */
+/* TABS */
 function bindTabs() {
   document.querySelectorAll(".tab").forEach(btn => {
-    btn.addEventListener("click", () => {
+    btn.onclick = () => {
       const key = btn.dataset.tab;
-
-      document.querySelectorAll(".tab")
-        .forEach(x => x.classList.remove("active"));
 
       document.querySelectorAll(".tab-panel")
         .forEach(x => x.classList.remove("active"));
 
-      btn.classList.add("active");
       document.getElementById(key + "Tab")
         ?.classList.add("active");
 
-      STORE.ui.activeTab = key;
-
-      if (key === "summary") {
-        if (!pricingLoaded) {
-          setSummaryMessage("Run pricing first");
-          return;
-        }
-
-        if (!summaryLoaded) {
-          renderBrandSummary();
-          summaryLoaded = true;
-        }
+      if (key === "summary" && pricingLoaded) {
+        renderBrandSummary();
       }
-    });
+    };
   });
 }
 
-/* ---------------- DROPDOWNS ---------------- */
-function fillBrands() {
-  const brands = [
-    ...new Set(
-      STORE.normalized.products.map(x => x.brand)
-    )
-  ].sort();
+/* =========================
+   MRP GENERATOR
+========================= */
 
-  const el = document.getElementById("brandFilter");
+let uploadedData = [];
 
-  if (el) {
-    el.innerHTML =
-      `<option value="">All Brands</option>` +
-      brands.map(b => `<option value="${b}">${b}</option>`).join("");
-  }
+function verifyFile() {
+  const file =
+    document.getElementById("mrpFile").files[0];
 
-  const manual = document.getElementById("manualBrand");
+  if (!file) return;
 
-  if (manual) {
-    manual.innerHTML =
-      `<option value="">Select Brand</option>` +
-      brands.map(b => `<option value="${b}">${b}</option>`).join("");
-  }
+  const reader = new FileReader();
+
+  reader.onload = e => {
+    const rows = e.target.result.split("\n");
+
+    uploadedData = rows.slice(1).map(r => {
+      const [sku, brand, tp] = r.split(",");
+      return { sku, brand, tp: Number(tp) };
+    });
+
+    document.getElementById("mrpPreview").innerHTML =
+      `Loaded ${uploadedData.length} rows`;
+
+    document.getElementById("generateMrpBtn").disabled = false;
+  };
+
+  reader.readAsText(file);
 }
 
-function fillTargets() {
-  const el = document.getElementById("profitTarget");
+function generateMrp() {
 
-  if (!el) return;
+  const target =
+    Number(document.getElementById("mrpTarget").value);
 
-  el.innerHTML =
-    CONFIG.TARGET_OPTIONS
-      .map(opt =>
-        `<option value="${opt.value}" ${opt.value === 5 ? "selected" : ""}>
-          ${opt.label}
-        </option>`
-      )
-      .join("");
+  const discount =
+    Number(document.getElementById("mrpDiscount").value);
+
+  const output = [];
+
+  uploadedData.forEach(r => {
+
+    const product = {
+      tp: r.tp,
+      brand: r.brand,
+      articleType: "Saree",
+      styleId: "999",
+      status: "Manual",
+      mrp: 0
+    };
+
+    const calc = solvePrice(product, target);
+
+    if (!calc) return;
+
+    const mrp = calc.sp / (1 - discount);
+
+    output.push({
+      sku: r.sku,
+      brand: r.brand,
+      tp: r.tp,
+      mrp: Math.round(mrp)
+    });
+  });
+
+  downloadCsv(output);
 }
 
-function syncPricingModeUi() {
-  const el = document.getElementById("pricingMode");
-  if (!el) return;
+function downloadCsv(rows) {
+  const csv =
+    "sku,brand,tp,mrp\n" +
+    rows.map(r =>
+      `${r.sku},${r.brand},${r.tp},${r.mrp}`
+    ).join("\n");
 
-  el.value = CONFIG.ROUNDING.MODE || "INT";
-}
+  const blob = new Blob([csv]);
+  const url = URL.createObjectURL(blob);
 
-/* ---------------- UI ---------------- */
-function setMasterMessage(msg) {
-  const body = document.getElementById("pricingBody");
-  if (!body) return;
-
-  body.innerHTML =
-    `<tr><td colspan="30" class="center">${msg}</td></tr>`;
-}
-
-function setSummaryMessage(msg) {
-  const body = document.getElementById("summaryBody");
-  if (!body) return;
-
-  body.innerHTML =
-    `<tr><td colspan="5" class="center">${msg}</td></tr>`;
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "mrp-output.csv";
+  a.click();
 }
