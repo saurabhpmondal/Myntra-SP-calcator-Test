@@ -5,7 +5,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Myntra Reverse Pricing</title>
-
 <meta name="theme-color" content="#111111">
 
 <link rel="stylesheet" href="css/style.css">
@@ -20,7 +19,9 @@
 
     <div>
       <h1 class="app-title">Myntra Reverse Pricing</h1>
-      <div class="sub-title">TP Based Smart Price Engine</div>
+      <div class="sub-title">
+        TP Based Smart Price Engine
+      </div>
     </div>
   </div>
 
@@ -37,7 +38,7 @@
   <div class="pill" id="timeStatus">--</div>
 </section>
 
-<!-- CONTROLS -->
+<!-- FILTERS -->
 <section class="control-panel">
 
   <div class="control-item">
@@ -62,7 +63,9 @@
 
   <div class="control-item">
     <label>&nbsp;</label>
-    <button id="exportBtn" class="btn">Export CSV</button>
+    <button id="exportBtn" class="btn">
+      Export CSV
+    </button>
   </div>
 
 </section>
@@ -72,174 +75,156 @@
   <button class="tab active" data-tab="search">Search</button>
   <button class="tab" data-tab="master">Pricing Master</button>
   <button class="tab" data-tab="summary">Brand Summary</button>
-  <button class="tab" data-tab="bulk">Bulk MRP</button>
   <button class="tab" data-tab="calculator">Calculator</button>
 </section>
 
 <main class="page-wrap">
 
-<!-- SEARCH -->
-<section id="searchTab" class="tab-panel active">
-  <div class="card">
-    <div class="card-title">Search Style / ERP SKU</div>
+  <!-- SEARCH -->
+  <section id="searchTab" class="tab-panel active">
 
-    <div class="grid-4">
-      <div style="grid-column:span 2">
-        <label>Search</label>
-        <input id="calcStyleId" type="text">
-      </div>
+    <div class="card">
+      <div class="card-title">Search Style / ERP SKU</div>
 
-      <div>
-        <label>&nbsp;</label>
-        <button id="calcBtn" class="btn btn-dark full">Search</button>
-      </div>
+      <div class="grid-4">
 
-      <div>
-        <label>&nbsp;</label>
-        <button id="clearCalcBtn" class="btn full">Clear</button>
+        <div style="grid-column:span 2">
+          <label>Search</label>
+          <input id="calcStyleId" type="text">
+        </div>
+
+        <div>
+          <label>&nbsp;</label>
+          <button id="calcBtn" class="btn btn-dark full">Search</button>
+        </div>
+
+        <div>
+          <label>&nbsp;</label>
+          <button id="clearCalcBtn" class="btn full">Clear</button>
+        </div>
+
       </div>
     </div>
-  </div>
 
-  <div class="card">
-    <div class="card-title">Result</div>
-    <div id="calcOutput" class="empty-box"></div>
-  </div>
-</section>
-
-<!-- PRICING MASTER -->
-<section id="masterTab" class="tab-panel">
-  <div class="card">
-    <div class="card-title">Pricing Master</div>
-
-    <div class="table-wrap">
-      <table id="pricingTable">
-        <thead id="pricingHead"></thead>
-        <tbody id="pricingBody">
-          <tr>
-            <td colspan="30" class="center">
-              Click "Generate Pricing"
-            </td>
-          </tr>
-        </tbody>
-      </table>
+    <div class="card">
+      <div class="card-title">Result</div>
+      <div id="calcOutput" class="empty-box">
+        Search style and view pricing.
+      </div>
     </div>
 
-    <div style="margin-top:12px">
-      <button id="loadMoreBtn" class="btn full">
-        Load More 50 Rows
+  </section>
+
+  <!-- PRICING MASTER -->
+  <section id="masterTab" class="tab-panel">
+
+    <div class="card">
+      <div class="card-title">Pricing Master</div>
+
+      <!-- ✅ GENERATE BUTTON -->
+      <div style="margin-bottom:12px">
+        <button id="generatePricingBtn" class="btn btn-dark full">
+          Generate Pricing
+        </button>
+      </div>
+
+      <div class="table-wrap">
+        <table id="pricingTable">
+          <thead id="pricingHead"></thead>
+          <tbody id="pricingBody">
+            <tr>
+              <td colspan="30" class="center">
+                Click "Generate Pricing"
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:12px">
+        <button id="loadMoreBtn" class="btn full">
+          Load More 50 Rows
+        </button>
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- SUMMARY -->
+  <section id="summaryTab" class="tab-panel">
+    <div class="card">
+      <div class="card-title">Brand Summary</div>
+
+      <div class="table-wrap">
+        <table id="summaryTable">
+          <thead>
+            <tr>
+              <th>Brand</th>
+              <th>Total Styles</th>
+              <th>Avg TD%</th>
+              <th>Avg TP Profit Rs</th>
+              <th>Avg TP Profit %</th>
+            </tr>
+          </thead>
+
+          <tbody id="summaryBody">
+            <tr>
+              <td colspan="5" class="center">
+                Run pricing first
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- CALCULATOR -->
+  <section id="calculatorTab" class="tab-panel">
+    <div class="card">
+      <div class="card-title">Manual Calculator</div>
+
+      <div class="grid-4">
+
+        <div>
+          <label>Mode</label>
+          <select id="manualMode">
+            <option value="tp">TP → SP</option>
+            <option value="sp">SP → TP</option>
+          </select>
+        </div>
+
+        <div>
+          <label>Brand</label>
+          <select id="manualBrand"></select>
+        </div>
+
+        <div>
+          <label>Article</label>
+          <select id="manualArticle">
+            <option value="Saree">Saree</option>
+          </select>
+        </div>
+
+        <div>
+          <label id="manualInputLabel">TP Value</label>
+          <input id="manualInput" type="number">
+        </div>
+
+      </div>
+
+      <button id="manualCalcBtn" class="btn btn-dark full">
+        Calculate
       </button>
-    </div>
-  </div>
-</section>
-
-<!-- SUMMARY -->
-<section id="summaryTab" class="tab-panel">
-  <div class="card">
-    <div class="card-title">Brand Summary</div>
-
-    <div class="table-wrap">
-      <table id="summaryTable">
-        <thead>
-          <tr>
-            <th>Brand</th>
-            <th>Total Styles</th>
-            <th>Avg TD%</th>
-            <th>Avg TP Profit Rs</th>
-            <th>Avg TP Profit %</th>
-          </tr>
-        </thead>
-
-        <tbody id="summaryBody">
-          <tr>
-            <td colspan="5" class="center">
-              Run pricing first
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-</section>
-
-<!-- BULK MRP -->
-<section id="bulkTab" class="tab-panel">
-
-  <div class="card">
-    <div class="card-title">Bulk MRP Generator</div>
-
-    <div class="grid-4">
-
-      <div style="grid-column:span 2">
-        <label>Upload CSV</label>
-        <input type="file" id="bulkFile" accept=".csv">
-      </div>
-
-      <div>
-        <label>TP Margin</label>
-        <select id="bulkMargin">
-          <option value="5" selected>+5%</option>
-          <option value="10">+10%</option>
-          <option value="15">+15%</option>
-        </select>
-      </div>
-
-      <div>
-        <label>Discount</label>
-        <select id="bulkDiscount">
-          <option value="60" selected>60%</option>
-          <option value="65">65%</option>
-          <option value="70">70%</option>
-        </select>
-      </div>
 
     </div>
 
-    <div style="margin-top:12px">
-      <button id="verifyBtn" class="btn">Verify Data</button>
-      <button id="generateBulkBtn" class="btn btn-dark" disabled>
-        Generate MRP
-      </button>
-      <button id="downloadBulkBtn" class="btn" disabled>
-        Download CSV
-      </button>
+    <div class="card">
+      <div class="card-title">Result</div>
+      <div id="manualOutput" class="empty-box"></div>
     </div>
-
-  </div>
-
-  <div class="card">
-    <div class="card-title">Preview</div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>SKU</th>
-            <th>Brand</th>
-            <th>TP</th>
-          </tr>
-        </thead>
-        <tbody id="bulkBody">
-          <tr>
-            <td colspan="3" class="center">
-              Upload file to preview
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-  </div>
-
-</section>
-
-<!-- CALCULATOR -->
-<section id="calculatorTab" class="tab-panel">
-  <div class="card">
-    <div class="card-title">Manual Calculator</div>
-    <div id="manualOutput" class="empty-box"></div>
-  </div>
-</section>
+  </section>
 
 </main>
 
