@@ -26,7 +26,7 @@
   </div>
 </header>
 
-<!-- ✅ RESTORED STATUS STRIP -->
+<!-- STATUS -->
 <section class="status-strip">
   <div class="pill" id="loadStatus">Waiting...</div>
   <div class="pill" id="recordStatus">0 Styles</div>
@@ -54,13 +54,11 @@
     </select>
   </div>
 
-  <!-- ✅ RESTORED EXPORT -->
   <div class="control-item">
     <label>&nbsp;</label>
     <button id="exportBtn" class="btn">Export CSV</button>
   </div>
 
-  <!-- ✅ ADDED GENERATE BUTTON -->
   <div class="control-item">
     <label>&nbsp;</label>
     <button id="generatePricingBtn" class="btn btn-dark">
@@ -124,7 +122,7 @@
   </div>
 </section>
 
-<!-- ✅ MRP GENERATOR (FULLY CORRECT FLOW) -->
+<!-- MRP GENERATOR -->
 <section id="mrpTab" class="tab-panel">
 
   <div class="card">
@@ -132,7 +130,6 @@
 
     <input type="file" id="mrpFile">
 
-    <!-- PREVIEW -->
     <div class="table-wrap" style="margin-top:12px">
       <table>
         <thead>
@@ -185,12 +182,59 @@
 
 </section>
 
-<!-- CALCULATOR -->
+<!-- ✅ FULLY RESTORED CALCULATOR -->
 <section id="calculatorTab" class="tab-panel">
+
   <div class="card">
-    <button id="manualCalcBtn">Calculate</button>
-    <div id="manualOutput"></div>
+    <div class="card-title">Manual Calculator</div>
+
+    <div class="grid-4">
+
+      <div>
+        <label>Mode</label>
+        <select id="manualMode">
+          <option value="tp">TP → Calculate SP</option>
+          <option value="sp">SP → Check TP</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Brand</label>
+        <select id="manualBrand">
+          <option value="">Select Brand</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Article</label>
+        <select id="manualArticle">
+          <option value="Saree">Saree</option>
+        </select>
+      </div>
+
+      <div>
+        <label id="manualInputLabel">TP Value</label>
+        <input type="number" id="manualInput" placeholder="Enter value">
+      </div>
+
+    </div>
+
+    <div style="margin-top:12px">
+      <button id="manualCalcBtn" class="btn btn-dark full">
+        Calculate
+      </button>
+    </div>
+
   </div>
+
+  <div class="card">
+    <div class="card-title">Calculator Result</div>
+
+    <div id="manualOutput" class="empty-box">
+      Select mode and calculate.
+    </div>
+  </div>
+
 </section>
 
 </main>
