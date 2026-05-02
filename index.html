@@ -1,11 +1,9 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Myntra Reverse Pricing</title>
-<meta name="theme-color" content="#111111">
 
 <link rel="stylesheet" href="css/style.css">
 <link rel="stylesheet" href="css/layout.css">
@@ -22,46 +20,17 @@
     </div>
   </div>
 
-  <div class="top-actions">
-    <button id="refreshBtn" class="btn btn-dark">
-      Refresh Data
-    </button>
-  </div>
+  <button id="refreshBtn" class="btn btn-dark">Refresh Data</button>
 </header>
 
-<section class="status-strip">
-  <div class="pill" id="loadStatus">Waiting...</div>
-  <div class="pill" id="recordStatus">0 Styles</div>
-  <div class="pill" id="timeStatus">--</div>
-</section>
-
 <section class="control-panel">
-
-  <div class="control-item">
-    <label>Profit Target</label>
-    <select id="profitTarget"></select>
-  </div>
-
-  <div class="control-item">
-    <label>Brand</label>
-    <select id="brandFilter">
-      <option value="">All Brands</option>
-    </select>
-  </div>
-
-  <div class="control-item">
-    <label>Pricing Mode</label>
-    <select id="pricingMode">
-      <option value="INT">Exact Price</option>
-      <option value="9">Nearest 9</option>
-    </select>
-  </div>
-
-  <div class="control-item">
-    <label>&nbsp;</label>
-    <button id="exportBtn" class="btn">Export CSV</button>
-  </div>
-
+  <select id="profitTarget"></select>
+  <select id="brandFilter"></select>
+  <select id="pricingMode">
+    <option value="INT">Exact Price</option>
+    <option value="9">Nearest 9</option>
+  </select>
+  <button id="exportBtn">Export CSV</button>
 </section>
 
 <section class="tabs">
@@ -72,118 +41,89 @@
   <button class="tab" data-tab="calculator">Calculator</button>
 </section>
 
-<main class="page-wrap">
+<main>
 
 <!-- SEARCH -->
 <section id="searchTab" class="tab-panel active">
-  <div class="card">
-    <div class="card-title">Search</div>
-    <div class="grid-4">
-      <div style="grid-column:span 2">
-        <input id="calcStyleId">
-      </div>
-      <button id="calcBtn" class="btn btn-dark full">Search</button>
-      <button id="clearCalcBtn" class="btn full">Clear</button>
-    </div>
-  </div>
-  <div class="card">
-    <div id="calcOutput" class="empty-box"></div>
-  </div>
+  <input id="calcStyleId">
+  <button id="calcBtn">Search</button>
+  <button id="clearCalcBtn">Clear</button>
+  <div id="calcOutput"></div>
 </section>
 
-<!-- PRICING MASTER -->
+<!-- PRICING -->
 <section id="masterTab" class="tab-panel">
-  <div class="card">
+  <button id="generatePricingBtn">Generate Pricing</button>
 
-    <div style="margin-bottom:12px">
-      <button id="generatePricingBtn" class="btn btn-dark full">
-        Generate Pricing
-      </button>
-    </div>
+  <table>
+    <thead id="pricingHead"></thead>
+    <tbody id="pricingBody">
+      <tr><td>Click Generate Pricing</td></tr>
+    </tbody>
+  </table>
 
-    <div class="table-wrap">
-      <table id="pricingTable">
-        <thead id="pricingHead"></thead>
-        <tbody id="pricingBody">
-          <tr><td colspan="30" class="center">Click Generate Pricing</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <button id="loadMoreBtn" class="btn full">Load More</button>
-
-  </div>
+  <button id="loadMoreBtn">Load More</button>
 </section>
 
 <!-- SUMMARY -->
 <section id="summaryTab" class="tab-panel">
-  <div class="card">
-    <table id="summaryTable">
+  <table>
+    <tbody id="summaryBody">
+      <tr><td>Run pricing first</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ✅ MRP GENERATOR -->
+<section id="mrpTab" class="tab-panel">
+
+  <h3>Upload CSV</h3>
+  <input type="file" id="mrpFile">
+
+  <!-- PREVIEW -->
+  <div style="max-height:300px;overflow:auto;margin-top:10px">
+    <table>
       <thead>
         <tr>
+          <th>SKU</th>
           <th>Brand</th>
-          <th>Total Styles</th>
-          <th>Avg TD%</th>
-          <th>Avg Profit</th>
-          <th>Avg %</th>
+          <th>TP</th>
         </tr>
       </thead>
-      <tbody id="summaryBody">
-        <tr><td colspan="5" class="center">Run pricing first</td></tr>
+      <tbody id="mrpPreviewBody">
+        <tr><td colspan="3">Upload file to preview</td></tr>
       </tbody>
     </table>
   </div>
-</section>
 
-<!-- ✅ MRP GENERATOR (FULLY ADDED, NOTHING REMOVED) -->
-<section id="mrpTab" class="tab-panel">
+  <button id="verifyBtn">✔ Verify Data</button>
 
-  <div class="card">
-    <div class="card-title">Upload CSV</div>
+  <h4>Controls</h4>
 
-    <input type="file" id="mrpFile">
+  <select id="mrpTarget">
+    <option value="5">5%</option>
+    <option value="10">10%</option>
+    <option value="15">15%</option>
+  </select>
 
-    <div style="margin-top:10px">
-      <select id="mrpTarget">
-        <option value="5">TP +5%</option>
-        <option value="10">TP +10%</option>
-        <option value="15">TP +15%</option>
-      </select>
+  <select id="mrpDiscount">
+    <option value="0.6">60%</option>
+    <option value="0.65">65%</option>
+    <option value="0.7">70%</option>
+  </select>
 
-      <select id="mrpDiscount">
-        <option value="0.6">60%</option>
-        <option value="0.65">65%</option>
-        <option value="0.7">70%</option>
-      </select>
-    </div>
-
-    <button id="verifyBtn" class="btn full">Verify</button>
-    <button id="generateMrpBtn" class="btn btn-dark full" disabled>
-      Generate MRP
-    </button>
-  </div>
-
-  <div class="card">
-    <div id="mrpPreview" class="empty-box">
-      Upload file to preview
-    </div>
-  </div>
+  <button id="generateMrpBtn" disabled>Generate MRP</button>
+  <button id="downloadMrpBtn" disabled>Download CSV</button>
 
 </section>
 
 <!-- CALCULATOR -->
 <section id="calculatorTab" class="tab-panel">
-  <div class="card">
-    <button id="manualCalcBtn" class="btn btn-dark full">
-      Calculate
-    </button>
-    <div id="manualOutput"></div>
-  </div>
+  <button id="manualCalcBtn">Calculate</button>
+  <div id="manualOutput"></div>
 </section>
 
 </main>
-
-<div id="toast" class="toast"></div>
 
 <script type="module" src="js/main.js"></script>
 </body>
