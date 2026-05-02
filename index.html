@@ -62,16 +62,7 @@
 
   <div class="control-item">
     <label>&nbsp;</label>
-    <button id="generateBtn" class="btn btn-dark">
-      Generate Pricing
-    </button>
-  </div>
-
-  <div class="control-item">
-    <label>&nbsp;</label>
-    <button id="exportBtn" class="btn">
-      Export CSV
-    </button>
+    <button id="exportBtn" class="btn">Export CSV</button>
   </div>
 
 </section>
@@ -81,6 +72,7 @@
   <button class="tab active" data-tab="search">Search</button>
   <button class="tab" data-tab="master">Pricing Master</button>
   <button class="tab" data-tab="summary">Brand Summary</button>
+  <button class="tab" data-tab="bulk">Bulk MRP</button>
   <button class="tab" data-tab="calculator">Calculator</button>
 </section>
 
@@ -94,7 +86,7 @@
     <div class="grid-4">
       <div style="grid-column:span 2">
         <label>Search</label>
-        <input id="calcStyleId" type="text" placeholder="Enter Style ID or ERP SKU">
+        <input id="calcStyleId" type="text">
       </div>
 
       <div>
@@ -111,9 +103,7 @@
 
   <div class="card">
     <div class="card-title">Result</div>
-    <div id="calcOutput" class="empty-box">
-      Search style and view pricing.
-    </div>
+    <div id="calcOutput" class="empty-box"></div>
   </div>
 </section>
 
@@ -172,52 +162,82 @@
   </div>
 </section>
 
+<!-- BULK MRP -->
+<section id="bulkTab" class="tab-panel">
+
+  <div class="card">
+    <div class="card-title">Bulk MRP Generator</div>
+
+    <div class="grid-4">
+
+      <div style="grid-column:span 2">
+        <label>Upload CSV</label>
+        <input type="file" id="bulkFile" accept=".csv">
+      </div>
+
+      <div>
+        <label>TP Margin</label>
+        <select id="bulkMargin">
+          <option value="5" selected>+5%</option>
+          <option value="10">+10%</option>
+          <option value="15">+15%</option>
+        </select>
+      </div>
+
+      <div>
+        <label>Discount</label>
+        <select id="bulkDiscount">
+          <option value="60" selected>60%</option>
+          <option value="65">65%</option>
+          <option value="70">70%</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div style="margin-top:12px">
+      <button id="verifyBtn" class="btn">Verify Data</button>
+      <button id="generateBulkBtn" class="btn btn-dark" disabled>
+        Generate MRP
+      </button>
+      <button id="downloadBulkBtn" class="btn" disabled>
+        Download CSV
+      </button>
+    </div>
+
+  </div>
+
+  <div class="card">
+    <div class="card-title">Preview</div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Brand</th>
+            <th>TP</th>
+          </tr>
+        </thead>
+        <tbody id="bulkBody">
+          <tr>
+            <td colspan="3" class="center">
+              Upload file to preview
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+</section>
+
 <!-- CALCULATOR -->
 <section id="calculatorTab" class="tab-panel">
   <div class="card">
     <div class="card-title">Manual Calculator</div>
-
-    <div class="grid-4">
-      <div>
-        <label>Mode</label>
-        <select id="manualMode">
-          <option value="tp">TP → Calculate SP</option>
-          <option value="sp">SP → Check TP</option>
-        </select>
-      </div>
-
-      <div>
-        <label>Brand</label>
-        <select id="manualBrand">
-          <option value="">Select Brand</option>
-        </select>
-      </div>
-
-      <div>
-        <label>Article</label>
-        <select id="manualArticle">
-          <option value="Saree">Saree</option>
-        </select>
-      </div>
-
-      <div>
-        <label id="manualInputLabel">TP Value</label>
-        <input id="manualInput" type="number">
-      </div>
-    </div>
-
-    <div style="margin-top:12px">
-      <button id="manualCalcBtn" class="btn btn-dark full">
-        Calculate
-      </button>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Calculator Result</div>
-    <div id="manualOutput" class="empty-box">
-      Select mode and calculate.
-    </div>
+    <div id="manualOutput" class="empty-box"></div>
   </div>
 </section>
 
