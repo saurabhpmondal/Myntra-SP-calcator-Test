@@ -5,28 +5,48 @@ import { normalizeAllData } from "./normalizer.js";
 import { initCalculator } from "./calculator.js";
 import { renderPricingTable } from "./table.js";
 import { initExport } from "./export.js";
-import { STORE, CONFIG } from "./config.js";
-import { renderBrandSummary } from "./brand-summary.js";
+import { initBulk } from "./bulk-mrp.js";
 
-/* STATE */
+import {
+  STORE,
+  CONFIG
+} from "./config.js";
+
+import {
+  renderBrandSummary
+} from "./brand-summary.js";
+
+/* ----------------------------------
+   STATE
+-----------------------------------*/
 let pricingLoaded = false;
 let summaryLoaded = false;
 
-/* INIT */
-document.addEventListener("DOMContentLoaded", initApp);
+/* ----------------------------------
+   INIT
+-----------------------------------*/
+document.addEventListener(
+  "DOMContentLoaded",
+  initApp
+);
 
 async function initApp() {
   bindTabs();
   bindControls();
   initCalculator();
   initExport();
+  initBulk();
 
   await refreshApp();
 }
 
-/* LOAD */
+/* ----------------------------------
+   REFRESH (FAST LOAD)
+-----------------------------------*/
 async function refreshApp() {
-  const ok = await loadAllData();
+  const ok =
+    await loadAllData();
+
   if (!ok) return;
 
   normalizeAllData();
@@ -40,94 +60,188 @@ async function refreshApp() {
   pricingLoaded = false;
   summaryLoaded = false;
 
-  setMasterMessage("Click Generate Pricing");
-  setSummaryMessage("Run pricing first");
+  setMasterMessage(
+    "Click Generate Pricing"
+  );
+
+  setSummaryMessage(
+    "Run pricing first"
+  );
 }
 
-/* CONTROLS */
+/* ----------------------------------
+   CONTROLS
+-----------------------------------*/
 function bindControls() {
-  const refresh = document.getElementById("refreshBtn");
-  const generate = document.getElementById("generateBtn");
-  const mode = document.getElementById("pricingMode");
+  const refresh =
+    document.getElementById(
+      "refreshBtn"
+    );
 
-  refresh?.addEventListener("click", refreshApp);
+  const brand =
+    document.getElementById(
+      "brandFilter"
+    );
 
-  generate?.addEventListener("click", () => {
-    STORE.ui.rowLimit = 50;
+  const target =
+    document.getElementById(
+      "profitTarget"
+    );
 
-    renderPricingTable();
-    pricingLoaded = true;
+  const mode =
+    document.getElementById(
+      "pricingMode"
+    );
 
-    summaryLoaded = false;
-  });
+  const loadMore =
+    document.getElementById(
+      "loadMoreBtn"
+    );
 
-  mode?.addEventListener("change", e => {
-    CONFIG.ROUNDING.MODE = e.target.value || "INT";
-    STORE.ui.pricingMode = CONFIG.ROUNDING.MODE;
-  });
+  refresh?.addEventListener(
+    "click",
+    refreshApp
+  );
+
+  brand?.addEventListener(
+    "change",
+    rerenderPricingIfLoaded
+  );
+
+  target?.addEventListener(
+    "change",
+    rerenderPricingIfLoaded
+  );
+
+  mode?.addEventListener(
+    "change",
+    e => {
+      const value =
+        e.target.value || "INT";
+
+      CONFIG.ROUNDING.MODE =
+        value;
+
+      STORE.ui.pricingMode =
+        value;
+
+      rerenderPricingIfLoaded();
+    }
+  );
+
+  loadMore?.addEventListener(
+    "click",
+    () => {
+      STORE.ui.rowLimit += 50;
+
+      renderPricingTable();
+    }
+  );
 }
 
-/* TABS */
+/* ----------------------------------
+   SAFE RERENDER
+-----------------------------------*/
+function rerenderPricingIfLoaded() {
+  if (!pricingLoaded) return;
+
+  STORE.ui.rowLimit = 50;
+
+  renderPricingTable();
+
+  summaryLoaded = false;
+}
+
+/* ----------------------------------
+   TAB SYSTEM (LAZY LOAD)
+-----------------------------------*/
 function bindTabs() {
-  const tabs = document.querySelectorAll(".tab");
+  const tabs =
+    document.querySelectorAll(
+      ".tab"
+    );
 
   tabs.forEach(btn => {
-    btn.addEventListener("click", () => {
-      const key = btn.dataset.tab;
+    btn.addEventListener(
+      "click",
+      () => {
+        const key =
+          btn.dataset.tab;
 
-      document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
-      document.querySelectorAll(".tab-panel").forEach(x => x.classList.remove("active"));
+        document
+          .querySelectorAll(".tab")
+          .forEach(x =>
+            x.classList.remove("active")
+          );
 
-      btn.classList.add("active");
-      document.getElementById(key + "Tab")?.classList.add("active");
+        document
+          .querySelectorAll(".tab-panel")
+          .forEach(x =>
+            x.classList.remove("active")
+          );
 
-      STORE.ui.activeTab = key;
+        btn.classList.add("active");
 
-      if (key === "summary") {
-        if (!pricingLoaded) {
-          setSummaryMessage("Run pricing first");
-          return;
+        document
+          .getElementById(
+            key + "Tab"
+          )
+          ?.classList.add("active");
+
+        STORE.ui.activeTab = key;
+
+        /* -------- MASTER TAB -------- */
+        if (key === "master") {
+          if (!pricingLoaded) {
+            renderPricingTable();
+            pricingLoaded = true;
+          }
         }
 
-        if (!summaryLoaded) {
-          renderBrandSummary();
-          summaryLoaded = true;
+        /* -------- SUMMARY TAB -------- */
+        if (key === "summary") {
+          if (!pricingLoaded) {
+            setSummaryMessage(
+              "Run pricing first"
+            );
+            return;
+          }
+
+          if (!summaryLoaded) {
+            renderBrandSummary();
+            summaryLoaded = true;
+          }
+        }
+
+        /* -------- BULK TAB -------- */
+        if (key === "bulk") {
+          // no auto execution
+          // user controls flow
         }
       }
-    });
+    );
   });
 }
 
-/* UI HELPERS */
-function setMasterMessage(msg) {
-  const body = document.getElementById("pricingBody");
-  if (!body) return;
-
-  body.innerHTML = `
-    <tr>
-      <td colspan="30" class="center">${msg}</td>
-    </tr>
-  `;
-}
-
-function setSummaryMessage(msg) {
-  const body = document.getElementById("summaryBody");
-  if (!body) return;
-
-  body.innerHTML = `
-    <tr>
-      <td colspan="5" class="center">${msg}</td>
-    </tr>
-  `;
-}
-
-/* DROPDOWNS */
+/* ----------------------------------
+   DROPDOWNS
+-----------------------------------*/
 function fillBrands() {
-  const brands = [...new Set(STORE.normalized.products.map(x => x.brand))].sort();
+  const brands = [
+    ...new Set(
+      STORE.normalized.products.map(
+        x => x.brand
+      )
+    )
+  ].sort();
 
   const selects = [
-    document.getElementById("brandFilter"),
-    document.getElementById("manualBrand")
+    document.getElementById(
+      "brandFilter"
+    ),
+    document.getElementById(
+      "manualBrand"
+    )
   ];
 
   selects.forEach(sel => {
@@ -139,26 +253,93 @@ function fillBrands() {
         : `<option value="">Select Brand</option>`;
 
     sel.innerHTML =
-      first + brands.map(b => `<option value="${b}">${b}</option>`).join("");
+      first +
+      brands
+        .map(
+          b =>
+            `<option value="${b}">${b}</option>`
+        )
+        .join("");
   });
 }
 
 function fillTargets() {
-  const el = document.getElementById("profitTarget");
+  const el =
+    document.getElementById(
+      "profitTarget"
+    );
+
   if (!el) return;
 
-  el.innerHTML = CONFIG.TARGET_OPTIONS.map(opt => {
-    const selected = String(opt.value) === "5" ? "selected" : "";
-    return `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
-  }).join("");
+  el.innerHTML =
+    CONFIG.TARGET_OPTIONS
+      .map(opt => {
+        const selected =
+          String(opt.value) === "5"
+            ? "selected"
+            : "";
+
+        return `
+          <option value="${opt.value}" ${selected}>
+            ${opt.label}
+          </option>
+        `;
+      })
+      .join("");
 }
 
 function syncPricingModeUi() {
-  const mode = document.getElementById("pricingMode");
+  const mode =
+    document.getElementById(
+      "pricingMode"
+    );
+
   if (!mode) return;
 
-  const current = STORE.ui.pricingMode || CONFIG.ROUNDING.MODE || "INT";
+  const current =
+    STORE.ui.pricingMode ||
+    CONFIG.ROUNDING.MODE ||
+    "INT";
 
   mode.value = current;
-  CONFIG.ROUNDING.MODE = current;
+
+  CONFIG.ROUNDING.MODE =
+    current;
+}
+
+/* ----------------------------------
+   UI HELPERS
+-----------------------------------*/
+function setMasterMessage(msg) {
+  const body =
+    document.getElementById(
+      "pricingBody"
+    );
+
+  if (!body) return;
+
+  body.innerHTML = `
+    <tr>
+      <td colspan="30" class="center">
+        ${msg}
+      </td>
+    </tr>
+  `;
+}
+
+function setSummaryMessage(msg) {
+  const body =
+    document.getElementById(
+      "summaryBody"
+    );
+
+  if (!body) return;
+
+  body.innerHTML = `
+    <tr>
+      <td colspan="5" class="center">
+        ${msg}
+      </td>
+    </tr>
+  `;
 }
