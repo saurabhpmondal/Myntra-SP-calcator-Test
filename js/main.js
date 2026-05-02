@@ -5,19 +5,31 @@ import { normalizeAllData } from "./normalizer.js";
 import { initCalculator } from "./calculator.js";
 import { renderPricingTable } from "./table.js";
 import { initExport } from "./export.js";
-import { renderBrandSummary } from "./brand-summary.js";
-import { solvePrice } from "./pricing-engine.js";
-import { STORE, CONFIG } from "./config.js";
 
-/* ---------------------------------- */
+import {
+  STORE,
+  CONFIG
+} from "./config.js";
+
+import {
+  renderBrandSummary
+} from "./brand-summary.js";
+
+/* ----------------------------------
+   CACHE
+-----------------------------------*/
+let lastRenderKey = "";
+let summaryRenderKey = "";
 let pricingLoaded = false;
+let summaryLoaded = false;
 
-/* MRP STATE */
-let uploadedData = [];
-let generatedOutput = [];
-
-/* ---------------------------------- */
-document.addEventListener("DOMContentLoaded", initApp);
+/* ----------------------------------
+   INIT
+-----------------------------------*/
+document.addEventListener(
+  "DOMContentLoaded",
+  initApp
+);
 
 async function initApp() {
   bindTabs();
@@ -28,9 +40,13 @@ async function initApp() {
   await refreshApp();
 }
 
-/* ---------------------------------- */
+/* ----------------------------------
+   REFRESH
+-----------------------------------*/
 async function refreshApp() {
-  const ok = await loadAllData();
+  const ok =
+    await loadAllData();
+
   if (!ok) return;
 
   normalizeAllData();
@@ -42,238 +58,312 @@ async function refreshApp() {
   STORE.ui.rowLimit = 50;
 
   pricingLoaded = false;
+  summaryLoaded = false;
 
-  setMasterMessage("Click Generate Pricing");
-  setSummaryMessage("Run pricing first");
+  lastRenderKey = "";
+  summaryRenderKey = "";
+
+  /* fast first load:
+     do not render heavy tabs now */
 }
 
-/* ---------------------------------- */
+/* ----------------------------------
+   CONTROLS
+-----------------------------------*/
 function bindControls() {
+  const refresh =
+    document.getElementById(
+      "refreshBtn"
+    );
 
-  document.getElementById("refreshBtn")
-    ?.addEventListener("click", refreshApp);
-
-  document.getElementById("generatePricingBtn")
-    ?.addEventListener("click", () => {
-      renderPricingTable();
-      pricingLoaded = true;
-    });
-
-  document.getElementById("loadMoreBtn")
-    ?.addEventListener("click", () => {
-      STORE.ui.rowLimit += 50;
-      renderPricingTable();
-    });
-
-  /* FILE UPLOAD → PREVIEW */
-  document.getElementById("mrpFile")
-    ?.addEventListener("change", handleFileUpload);
-
-  /* GENERATE (VERIFY + GENERATE) */
-  document.getElementById("generateMrpBtn")
-    ?.addEventListener("click", generateMrp);
-
-  /* DOWNLOAD */
-  document.getElementById("downloadMrpBtn")
-    ?.addEventListener("click", downloadMrp);
-}
-
-/* ---------------------------------- */
-/* TABS */
-function bindTabs() {
-  const tabs = document.querySelectorAll(".tab");
-
-  tabs.forEach(btn => {
-    btn.addEventListener("click", () => {
-
-      const key = btn.dataset.tab;
-
-      tabs.forEach(t => t.classList.remove("active"));
-      btn.classList.add("active");
-
-      document.querySelectorAll(".tab-panel")
-        .forEach(x => x.classList.remove("active"));
-
-      document.getElementById(key + "Tab")
-        ?.classList.add("active");
-
-      STORE.ui.activeTab = key;
-
-      if (key === "summary" && pricingLoaded) {
-        renderBrandSummary();
-      }
-    });
-  });
-}
-
-/* ---------------------------------- */
-/* PREVIEW */
-function handleFileUpload(e) {
-
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-
-  reader.onload = ev => {
-
-    const rows = ev.target.result.split("\n");
-
-    uploadedData = rows.slice(1)
-      .map(r => {
-        const [sku, brand, tp] = r.split(",");
-        return {
-          sku: (sku || "").trim(),
-          brand: (brand || "").trim(),
-          tp: Number(tp || 0)
-        };
-      })
-      .filter(x => x.sku && x.tp);
-
-    renderPreview(uploadedData);
-
-    /* reset states */
-    generatedOutput = [];
-    document.getElementById("downloadMrpBtn").disabled = true;
-  };
-
-  reader.readAsText(file);
-}
-
-/* ---------------------------------- */
-function renderPreview(data) {
-
-  const body = document.getElementById("mrpPreviewBody");
-  if (!body) return;
-
-  if (!data.length) {
-    body.innerHTML = `
-      <tr>
-        <td colspan="3" class="center">
-          No valid rows
-        </td>
-      </tr>
-    `;
-    return;
-  }
-
-  body.innerHTML = data.map(r => `
-    <tr>
-      <td>${r.sku}</td>
-      <td>${r.brand}</td>
-      <td>${r.tp}</td>
-    </tr>
-  `).join("");
-}
-
-/* ---------------------------------- */
-/* GENERATE */
-function generateMrp() {
-
-  if (!uploadedData.length) return;
+  const brand =
+    document.getElementById(
+      "brandFilter"
+    );
 
   const target =
-    Number(document.getElementById("mrpTarget")?.value || 5);
+    document.getElementById(
+      "profitTarget"
+    );
 
-  const discount =
-    Number(document.getElementById("mrpDiscount")?.value || 0.6);
+  const mode =
+    document.getElementById(
+      "pricingMode"
+    );
 
-  generatedOutput = [];
+  const loadMore =
+    document.getElementById(
+      "loadMoreBtn"
+    );
 
-  uploadedData.forEach(r => {
+  refresh?.addEventListener(
+    "click",
+    refreshApp
+  );
 
-    const product = {
-      tp: r.tp,
-      brand: r.brand,
-      articleType: "Saree",
-      styleId: "999999",
-      status: "Manual",
-      mrp: 0
-    };
+  brand?.addEventListener(
+    "change",
+    rerenderAll
+  );
 
-    const calc = solvePrice(product, target);
-    if (!calc) return;
+  target?.addEventListener(
+    "change",
+    rerenderAll
+  );
 
-    const mrp = calc.sp / (1 - discount);
+  mode?.addEventListener(
+    "change",
+    e => {
+      const value =
+        e.target.value ||
+        "INT";
 
-    generatedOutput.push({
-      sku: r.sku,
-      brand: r.brand,
-      tp: r.tp,
-      mrp: Math.round(mrp)
-    });
-  });
+      CONFIG.ROUNDING.MODE =
+        value;
 
-  document.getElementById("downloadMrpBtn").disabled = false;
+      STORE.ui.pricingMode =
+        value;
+
+      rerenderAll();
+    }
+  );
+
+  loadMore?.addEventListener(
+    "click",
+    () => {
+      STORE.ui.rowLimit += 50;
+
+      renderPricingTable();
+    }
+  );
 }
 
-/* ---------------------------------- */
-/* DOWNLOAD */
-function downloadMrp() {
+/* ----------------------------------
+   SMART RENDER
+-----------------------------------*/
+function rerenderAll() {
+  STORE.ui.rowLimit = 50;
 
-  if (!generatedOutput.length) return;
+  lastRenderKey = "";
+  summaryRenderKey = "";
 
-  const csv =
-    "sku,brand,tp,mrp\n" +
-    generatedOutput.map(r =>
-      `${r.sku},${r.brand},${r.tp},${r.mrp}`
-    ).join("\n");
+  if (pricingLoaded) {
+    renderPricingTable();
+    lastRenderKey =
+      getRenderKey();
+  }
 
-  const blob = new Blob([csv]);
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "mrp-output.csv";
-  a.click();
+  if (
+    summaryLoaded &&
+    STORE.ui.activeTab ===
+      "summary"
+  ) {
+    renderBrandSummary();
+    summaryRenderKey =
+      getRenderKey();
+  }
 }
 
-/* ---------------------------------- */
+function getRenderKey() {
+  const brand =
+    document.getElementById(
+      "brandFilter"
+    )?.value || "";
+
+  const target =
+    document.getElementById(
+      "profitTarget"
+    )?.value || "5";
+
+  const mode =
+    CONFIG.ROUNDING.MODE ||
+    "INT";
+
+  return [
+    brand,
+    target,
+    mode
+  ].join("|");
+}
+
+/* ----------------------------------
+   DROPDOWNS
+-----------------------------------*/
 function fillBrands() {
   const brands = [
-    ...new Set(STORE.normalized.products.map(x => x.brand))
+    ...new Set(
+      STORE.normalized.products.map(
+        x => x.brand
+      )
+    )
   ].sort();
 
-  const el = document.getElementById("brandFilter");
-  if (!el) return;
+  const selects = [
+    document.getElementById(
+      "brandFilter"
+    ),
+    document.getElementById(
+      "manualBrand"
+    )
+  ];
 
-  el.innerHTML =
-    `<option value="">All Brands</option>` +
-    brands.map(b => `<option value="${b}">${b}</option>`).join("");
+  selects.forEach(sel => {
+    if (!sel) return;
+
+    const first =
+      sel.id ===
+      "brandFilter"
+        ? `<option value="">All Brands</option>`
+        : `<option value="">Select Brand</option>`;
+
+    sel.innerHTML =
+      first +
+      brands
+        .map(
+          b =>
+            `<option value="${b}">${b}</option>`
+        )
+        .join("");
+  });
 }
 
 function fillTargets() {
-  const el = document.getElementById("profitTarget");
+  const el =
+    document.getElementById(
+      "profitTarget"
+    );
+
   if (!el) return;
 
   el.innerHTML =
     CONFIG.TARGET_OPTIONS
-      .map(opt =>
-        `<option value="${opt.value}" ${opt.value === 5 ? "selected" : ""}>
-          ${opt.label}
-        </option>`
-      ).join("");
+      .map(opt => {
+        const selected =
+          String(
+            opt.value
+          ) === "5"
+            ? "selected"
+            : "";
+
+        return `
+          <option
+            value="${opt.value}"
+            ${selected}
+          >
+            ${opt.label}
+          </option>
+        `;
+      })
+      .join("");
 }
 
 function syncPricingModeUi() {
-  const el = document.getElementById("pricingMode");
-  if (!el) return;
+  const mode =
+    document.getElementById(
+      "pricingMode"
+    );
 
-  el.value = CONFIG.ROUNDING.MODE || "INT";
+  if (!mode) return;
+
+  const current =
+    STORE.ui.pricingMode ||
+    CONFIG.ROUNDING.MODE ||
+    "INT";
+
+  mode.value = current;
+
+  CONFIG.ROUNDING.MODE =
+    current;
 }
 
-function setMasterMessage(msg) {
-  const body = document.getElementById("pricingBody");
-  if (!body) return;
+/* ----------------------------------
+   TABS
+-----------------------------------*/
+function bindTabs() {
+  const tabs =
+    document.querySelectorAll(
+      ".tab"
+    );
 
-  body.innerHTML =
-    `<tr><td colspan="30" class="center">${msg}</td></tr>`;
-}
+  tabs.forEach(btn => {
+    btn.addEventListener(
+      "click",
+      () => {
+        const key =
+          btn.dataset.tab;
 
-function setSummaryMessage(msg) {
-  const body = document.getElementById("summaryBody");
-  if (!body) return;
+        document
+          .querySelectorAll(
+            ".tab"
+          )
+          .forEach(x =>
+            x.classList.remove(
+              "active"
+            )
+          );
 
-  body.innerHTML =
-    `<tr><td colspan="5" class="center">${msg}</td></tr>`;
+        document
+          .querySelectorAll(
+            ".tab-panel"
+          )
+          .forEach(x =>
+            x.classList.remove(
+              "active"
+            )
+          );
+
+        btn.classList.add(
+          "active"
+        );
+
+        document
+          .getElementById(
+            key + "Tab"
+          )
+          ?.classList.add(
+            "active"
+          );
+
+        STORE.ui.activeTab =
+          key;
+
+        const renderKey =
+          getRenderKey();
+
+        /* Lazy pricing */
+        if (
+          key === "master"
+        ) {
+          if (
+            !pricingLoaded ||
+            lastRenderKey !==
+              renderKey
+          ) {
+            renderPricingTable();
+
+            pricingLoaded = true;
+            lastRenderKey =
+              renderKey;
+          }
+        }
+
+        /* Lazy summary */
+        if (
+          key === "summary"
+        ) {
+          if (
+            !summaryLoaded ||
+            summaryRenderKey !==
+              renderKey
+          ) {
+            renderBrandSummary();
+
+            summaryLoaded = true;
+            summaryRenderKey =
+              renderKey;
+          }
+        }
+      }
+    );
+  });
 }

@@ -1,130 +1,429 @@
+<!-- index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta
+  name="viewport"
+  content="width=device-width,initial-scale=1.0"
+>
 <title>Myntra Reverse Pricing</title>
 
-<link rel="stylesheet" href="css/style.css">
-<link rel="stylesheet" href="css/layout.css">
+<meta
+  name="theme-color"
+  content="#111111"
+>
+
+<link
+  rel="stylesheet"
+  href="css/style.css"
+>
+<link
+  rel="stylesheet"
+  href="css/layout.css"
+>
 </head>
 
 <body>
 
 <header class="topbar">
+
   <div class="brand-wrap">
     <div class="logo-box">M</div>
+
     <div>
-      <h1 class="app-title">Myntra Reverse Pricing</h1>
-      <div class="sub-title">TP Based Smart Price Engine</div>
+      <h1 class="app-title">
+        Myntra Reverse Pricing
+      </h1>
+
+      <div class="sub-title">
+        TP Based Smart Price Engine
+      </div>
     </div>
   </div>
 
-  <button id="refreshBtn" class="btn btn-dark">Refresh Data</button>
-</header>
-
-<section class="control-panel">
-  <select id="profitTarget"></select>
-  <select id="brandFilter"></select>
-  <select id="pricingMode">
-    <option value="INT">Exact Price</option>
-    <option value="9">Nearest 9</option>
-  </select>
-  <button id="exportBtn">Export CSV</button>
-</section>
-
-<section class="tabs">
-  <button class="tab active" data-tab="search">Search</button>
-  <button class="tab" data-tab="master">Pricing Master</button>
-  <button class="tab" data-tab="summary">Brand Summary</button>
-  <button class="tab" data-tab="mrp">MRP Generator</button>
-  <button class="tab" data-tab="calculator">Calculator</button>
-</section>
-
-<main>
-
-<!-- SEARCH -->
-<section id="searchTab" class="tab-panel active">
-  <input id="calcStyleId">
-  <button id="calcBtn">Search</button>
-  <button id="clearCalcBtn">Clear</button>
-  <div id="calcOutput"></div>
-</section>
-
-<!-- PRICING -->
-<section id="masterTab" class="tab-panel">
-  <button id="generatePricingBtn">Generate Pricing</button>
-
-  <table>
-    <thead id="pricingHead"></thead>
-    <tbody id="pricingBody">
-      <tr><td>Click Generate Pricing</td></tr>
-    </tbody>
-  </table>
-
-  <button id="loadMoreBtn">Load More</button>
-</section>
-
-<!-- SUMMARY -->
-<section id="summaryTab" class="tab-panel">
-  <table>
-    <tbody id="summaryBody">
-      <tr><td>Run pricing first</td></tr>
-    </tbody>
-  </table>
-</section>
-
-<!-- ✅ MRP GENERATOR -->
-<section id="mrpTab" class="tab-panel">
-
-  <h3>Upload CSV</h3>
-  <input type="file" id="mrpFile">
-
-  <!-- PREVIEW -->
-  <div style="max-height:300px;overflow:auto;margin-top:10px">
-    <table>
-      <thead>
-        <tr>
-          <th>SKU</th>
-          <th>Brand</th>
-          <th>TP</th>
-        </tr>
-      </thead>
-      <tbody id="mrpPreviewBody">
-        <tr><td colspan="3">Upload file to preview</td></tr>
-      </tbody>
-    </table>
+  <div class="top-actions">
+    <button
+      id="refreshBtn"
+      class="btn btn-dark"
+    >
+      Refresh Data
+    </button>
   </div>
 
-  <button id="verifyBtn">✔ Verify Data</button>
+</header>
 
-  <h4>Controls</h4>
+<!-- STATUS -->
+<section class="status-strip">
 
-  <select id="mrpTarget">
-    <option value="5">5%</option>
-    <option value="10">10%</option>
-    <option value="15">15%</option>
-  </select>
+  <div
+    class="pill"
+    id="loadStatus"
+  >
+    Waiting...
+  </div>
 
-  <select id="mrpDiscount">
-    <option value="0.6">60%</option>
-    <option value="0.65">65%</option>
-    <option value="0.7">70%</option>
-  </select>
+  <div
+    class="pill"
+    id="recordStatus"
+  >
+    0 Styles
+  </div>
 
-  <button id="generateMrpBtn" disabled>Generate MRP</button>
-  <button id="downloadMrpBtn" disabled>Download CSV</button>
+  <div
+    class="pill"
+    id="timeStatus"
+  >
+    --
+  </div>
 
 </section>
 
-<!-- CALCULATOR -->
-<section id="calculatorTab" class="tab-panel">
-  <button id="manualCalcBtn">Calculate</button>
-  <div id="manualOutput"></div>
+<!-- TOP FILTERS -->
+<section class="control-panel">
+
+  <!-- dynamic from config -->
+  <div class="control-item">
+    <label>
+      Profit Target
+    </label>
+
+    <select id="profitTarget">
+    </select>
+  </div>
+
+  <div class="control-item">
+    <label>
+      Brand
+    </label>
+
+    <select id="brandFilter">
+      <option value="">
+        All Brands
+      </option>
+    </select>
+  </div>
+
+  <div class="control-item">
+    <label>
+      Pricing Mode
+    </label>
+
+    <select id="pricingMode">
+
+      <option
+        value="INT"
+        selected
+      >
+        Exact Price
+      </option>
+
+      <option value="9">
+        Nearest 9
+      </option>
+
+    </select>
+  </div>
+
+  <div class="control-item">
+    <label>&nbsp;</label>
+
+    <button
+      id="exportBtn"
+      class="btn"
+    >
+      Export CSV
+    </button>
+  </div>
+
 </section>
+
+<!-- TABS -->
+<section class="tabs">
+
+  <button
+    class="tab active"
+    data-tab="search"
+  >
+    Search
+  </button>
+
+  <button
+    class="tab"
+    data-tab="master"
+  >
+    Pricing Master
+  </button>
+
+  <button
+    class="tab"
+    data-tab="summary"
+  >
+    Brand Summary
+  </button>
+
+  <button
+    class="tab"
+    data-tab="calculator"
+  >
+    Calculator
+  </button>
+
+</section>
+
+<main class="page-wrap">
+
+  <!-- SEARCH -->
+  <section
+    id="searchTab"
+    class="tab-panel active"
+  >
+
+    <div class="card">
+
+      <div class="card-title">
+        Search Style / ERP SKU
+      </div>
+
+      <div class="grid-4">
+
+        <div style="grid-column:span 2">
+          <label>
+            Search
+          </label>
+
+          <input
+            type="text"
+            id="calcStyleId"
+            placeholder="Enter Style ID or ERP SKU"
+          >
+        </div>
+
+        <div>
+          <label>&nbsp;</label>
+
+          <button
+            id="calcBtn"
+            class="btn btn-dark full"
+          >
+            Search
+          </button>
+        </div>
+
+        <div>
+          <label>&nbsp;</label>
+
+          <button
+            id="clearCalcBtn"
+            class="btn full"
+          >
+            Clear
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <div class="card-title">
+        Result
+      </div>
+
+      <div
+        id="calcOutput"
+        class="empty-box"
+      >
+        Search style and view pricing.
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- PRICING MASTER -->
+  <section
+    id="masterTab"
+    class="tab-panel"
+  >
+
+    <div class="card">
+
+      <div class="card-title">
+        Pricing Master
+      </div>
+
+      <div class="table-wrap">
+        <table id="pricingTable">
+          <thead id="pricingHead"></thead>
+          <tbody id="pricingBody"></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:12px">
+
+        <button
+          id="loadMoreBtn"
+          class="btn full"
+        >
+          Load More 50 Rows
+        </button>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- BRAND SUMMARY -->
+  <section
+    id="summaryTab"
+    class="tab-panel"
+  >
+
+    <div class="card">
+
+      <div class="card-title">
+        Brand Summary
+      </div>
+
+      <div class="table-wrap">
+
+        <table id="summaryTable">
+
+          <thead>
+            <tr>
+              <th>Brand</th>
+              <th>Total Styles</th>
+              <th>Avg TD%</th>
+              <th>Avg TP Profit Rs</th>
+              <th>Avg TP Profit %</th>
+            </tr>
+          </thead>
+
+          <tbody id="summaryBody">
+            <tr>
+              <td
+                colspan="5"
+                class="center"
+              >
+                Open tab to load summary...
+              </td>
+            </tr>
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- CALCULATOR -->
+  <section
+    id="calculatorTab"
+    class="tab-panel"
+  >
+
+    <div class="card">
+
+      <div class="card-title">
+        Manual Calculator
+      </div>
+
+      <div class="grid-4">
+
+        <div>
+          <label>Mode</label>
+
+          <select id="manualMode">
+            <option value="tp">
+              TP → Calculate SP
+            </option>
+
+            <option value="sp">
+              SP → Check TP
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label>Brand</label>
+
+          <select id="manualBrand">
+            <option value="">
+              Select Brand
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label>Article</label>
+
+          <select id="manualArticle">
+            <option value="Saree">
+              Saree
+            </option>
+          </select>
+        </div>
+
+        <div>
+          <label id="manualInputLabel">
+            TP Value
+          </label>
+
+          <input
+            type="number"
+            id="manualInput"
+            placeholder="Enter value"
+          >
+        </div>
+
+      </div>
+
+      <div style="margin-top:12px">
+
+        <button
+          id="manualCalcBtn"
+          class="btn btn-dark full"
+        >
+          Calculate
+        </button>
+
+      </div>
+
+    </div>
+
+    <div class="card">
+
+      <div class="card-title">
+        Calculator Result
+      </div>
+
+      <div
+        id="manualOutput"
+        class="empty-box"
+      >
+        Select mode and calculate.
+      </div>
+
+    </div>
+
+  </section>
 
 </main>
 
-<script type="module" src="js/main.js"></script>
+<div
+  id="toast"
+  class="toast"
+></div>
+
+<script
+  type="module"
+  src="js/main.js"
+></script>
+
 </body>
 </html>
