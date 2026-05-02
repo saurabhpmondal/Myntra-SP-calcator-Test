@@ -1,246 +1,311 @@
+// js/main.js
+
 import { loadAllData } from "./data-loader.js";
 import { normalizeAllData } from "./normalizer.js";
-import { renderPricingTable } from "./table.js";
-import { renderBrandSummary } from "./brand-summary.js";
-import { solvePrice } from "./pricing-engine.js";
-import { STORE, CONFIG } from "./config.js";
-
-/* ✅ ADDED (missing earlier) */
 import { initCalculator } from "./calculator.js";
+import { renderPricingTable } from "./table.js";
 import { initExport } from "./export.js";
+import { renderBrandSummary } from "./brand-summary.js";
 
+import {
+  STORE,
+  CONFIG
+} from "./config.js";
+
+/* ----------------------------------
+   STATE
+-----------------------------------*/
+let lastRenderKey = "";
+let summaryRenderKey = "";
 let pricingLoaded = false;
+let summaryLoaded = false;
 
-let uploadedData = [];
-let generatedOutput = [];
+/* ----------------------------------
+   INIT
+-----------------------------------*/
+document.addEventListener(
+  "DOMContentLoaded",
+  initApp
+);
 
-document.addEventListener("DOMContentLoaded", init);
-
-/* ---------------- INIT ---------------- */
-async function init() {
+async function initApp() {
   bindTabs();
   bindControls();
+  initCalculator();
+  initExport();
 
-  initCalculator();   // ✅ FIXED
-  initExport();       // ✅ FIXED
+  await refreshApp();
+}
 
-  await loadAllData();
+/* ----------------------------------
+   REFRESH
+-----------------------------------*/
+async function refreshApp() {
+  const ok = await loadAllData();
+
+  if (!ok) return;
+
   normalizeAllData();
 
-  fillBrands();       // ✅ FIXED
-  fillTargets();      // ✅ FIXED
-  updateStatus();     // ✅ FIXED
+  fillBrands();
+  fillTargets();
+  syncPricingModeUi();
+
+  STORE.ui.rowLimit = 50;
+
+  pricingLoaded = false;
+  summaryLoaded = false;
+
+  lastRenderKey = "";
+  summaryRenderKey = "";
 }
 
-/* ---------------- TABS ---------------- */
-function bindTabs() {
-  const tabs = document.querySelectorAll(".tab");
-
-  tabs.forEach(btn => {
-    btn.addEventListener("click", () => {
-
-      tabs.forEach(t => t.classList.remove("active"));
-      btn.classList.add("active");
-
-      document.querySelectorAll(".tab-panel")
-        .forEach(p => p.classList.remove("active"));
-
-      document.getElementById(btn.dataset.tab + "Tab")
-        ?.classList.add("active");
-
-      if (btn.dataset.tab === "summary" && pricingLoaded) {
-        renderBrandSummary();
-      }
-    });
-  });
-}
-
-/* ---------------- CONTROLS ---------------- */
+/* ----------------------------------
+   CONTROLS
+-----------------------------------*/
 function bindControls() {
+  const refresh =
+    document.getElementById("refreshBtn");
 
-  document.getElementById("generatePricingBtn")
-    ?.addEventListener("click", () => {
-      renderPricingTable();
-      pricingLoaded = true;
-    });
+  const brand =
+    document.getElementById("brandFilter");
 
-  document.getElementById("loadMoreBtn")
-    ?.addEventListener("click", () => {
+  const target =
+    document.getElementById("profitTarget");
+
+  const mode =
+    document.getElementById("pricingMode");
+
+  const loadMore =
+    document.getElementById("loadMoreBtn");
+
+  const generateBtn =
+    document.getElementById("generatePricingBtn");
+
+  refresh?.addEventListener(
+    "click",
+    refreshApp
+  );
+
+  brand?.addEventListener(
+    "change",
+    rerenderAll
+  );
+
+  target?.addEventListener(
+    "change",
+    rerenderAll
+  );
+
+  mode?.addEventListener(
+    "change",
+    e => {
+      const value =
+        e.target.value || "INT";
+
+      CONFIG.ROUNDING.MODE = value;
+      STORE.ui.pricingMode = value;
+
+      rerenderAll();
+    }
+  );
+
+  loadMore?.addEventListener(
+    "click",
+    () => {
       STORE.ui.rowLimit += 50;
       renderPricingTable();
-    });
+    }
+  );
 
-  document.getElementById("mrpFile")
-    ?.addEventListener("change", handleUpload);
+  /* GENERATE PRICING BUTTON */
+  generateBtn?.addEventListener(
+    "click",
+    () => {
+      STORE.ui.rowLimit = 50;
 
-  document.getElementById("generateMrpBtn")
-    ?.addEventListener("click", generateMrp);
+      renderPricingTable();
 
-  document.getElementById("downloadMrpBtn")
-    ?.addEventListener("click", downloadCsv);
+      pricingLoaded = true;
+      lastRenderKey = getRenderKey();
+    }
+  );
 }
 
-/* ---------------- STATUS ---------------- */
-function updateStatus() {
-  const load = document.getElementById("loadStatus");
-  const rec = document.getElementById("recordStatus");
-  const time = document.getElementById("timeStatus");
+/* ----------------------------------
+   RERENDER
+-----------------------------------*/
+function rerenderAll() {
+  STORE.ui.rowLimit = 50;
 
-  if (load) load.textContent = "Data Loaded";
+  lastRenderKey = "";
+  summaryRenderKey = "";
 
-  if (rec) {
-    rec.textContent =
-      (STORE.normalized.products?.length || 0) + " Styles";
+  if (pricingLoaded) {
+    renderPricingTable();
+    lastRenderKey = getRenderKey();
   }
 
-  if (time) {
-    time.textContent =
-      new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit"
-      });
+  if (
+    summaryLoaded &&
+    STORE.ui.activeTab === "summary"
+  ) {
+    renderBrandSummary();
+    summaryRenderKey = getRenderKey();
   }
 }
 
-/* ---------------- BRAND FILTER ---------------- */
+function getRenderKey() {
+  const brand =
+    document.getElementById("brandFilter")
+      ?.value || "";
+
+  const target =
+    document.getElementById("profitTarget")
+      ?.value || "5";
+
+  const mode =
+    CONFIG.ROUNDING.MODE || "INT";
+
+  return [brand, target, mode].join("|");
+}
+
+/* ----------------------------------
+   DROPDOWNS
+-----------------------------------*/
 function fillBrands() {
   const brands = [
     ...new Set(
-      STORE.normalized.products.map(x => x.brand)
+      STORE.normalized.products.map(
+        x => x.brand
+      )
     )
-  ].sort();
+  ]
+    .filter(Boolean)
+    .sort();
 
-  const el = document.getElementById("brandFilter");
+  const brandFilter =
+    document.getElementById("brandFilter");
 
-  if (!el) return;
+  const manualBrand =
+    document.getElementById("manualBrand");
 
-  el.innerHTML =
-    `<option value="">All Brands</option>` +
-    brands.map(b =>
-      `<option value="${b}">${b}</option>`
-    ).join("");
-}
-
-/* ---------------- TARGET DROPDOWN ---------------- */
-function fillTargets() {
-  const el = document.getElementById("profitTarget");
-
-  if (!el) return;
-
-  el.innerHTML =
-    CONFIG.TARGET_OPTIONS
-      .map(opt => `
-        <option value="${opt.value}">
-          ${opt.label}
-        </option>
-      `)
-      .join("");
-}
-
-/* ---------------- UPLOAD ---------------- */
-function handleUpload(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-
-  reader.onload = ev => {
-    const rows = ev.target.result.split("\n");
-
-    uploadedData = rows.slice(1).map(r => {
-      const [sku, brand, tp] = r.split(",");
-      return {
-        sku: (sku || "").trim(),
-        brand: (brand || "").trim(),
-        tp: Number(tp || 0)
-      };
-    }).filter(x => x.sku && x.tp);
-
-    renderPreview(uploadedData);
-
-    generatedOutput = [];
-    document.getElementById("downloadMrpBtn").disabled = true;
-
-    if (!uploadedData.length) {
-      alert("Invalid CSV format");
-    }
-  };
-
-  reader.readAsText(file);
-}
-
-/* ---------------- PREVIEW ---------------- */
-function renderPreview(data) {
-  const body = document.getElementById("mrpPreviewBody");
-
-  if (!body) return;
-
-  if (!data.length) {
-    body.innerHTML =
-      `<tr><td colspan="3">No data</td></tr>`;
-    return;
+  /* TOP FILTER */
+  if (brandFilter) {
+    brandFilter.innerHTML =
+      `<option value="">All Brands</option>` +
+      brands
+        .map(
+          b =>
+            `<option value="${b}">${b}</option>`
+        )
+        .join("");
   }
 
-  body.innerHTML = data.map(r => `
-    <tr>
-      <td>${r.sku}</td>
-      <td>${r.brand}</td>
-      <td>${r.tp}</td>
-    </tr>
-  `).join("");
+  /* CALCULATOR */
+  if (manualBrand) {
+    manualBrand.innerHTML =
+      `<option value="">Select Brand</option>` +
+      brands
+        .map(
+          b =>
+            `<option value="${b}">${b}</option>`
+        )
+        .join("");
+  }
 }
 
-/* ---------------- GENERATE MRP ---------------- */
-function generateMrp() {
+function fillTargets() {
+  const el =
+    document.getElementById("profitTarget");
 
-  const target =
-    Number(document.getElementById("mrpTarget").value);
+  if (!el) return;
 
-  const discount =
-    Number(document.getElementById("mrpDiscount").value);
+  el.innerHTML =
+    CONFIG.TARGET_OPTIONS.map(opt => {
+      const selected =
+        String(opt.value) === "5"
+          ? "selected"
+          : "";
 
-  generatedOutput = [];
+      return `
+        <option value="${opt.value}" ${selected}>
+          ${opt.label}
+        </option>
+      `;
+    }).join("");
+}
 
-  uploadedData.forEach(r => {
+function syncPricingModeUi() {
+  const mode =
+    document.getElementById("pricingMode");
 
-    const product = {
-      tp: r.tp,
-      brand: r.brand,
-      articleType: "Saree",
-      styleId: "999",
-      status: "Manual"
-    };
+  if (!mode) return;
 
-    const calc = solvePrice(product, target);
-    if (!calc) return;
+  const current =
+    STORE.ui.pricingMode ||
+    CONFIG.ROUNDING.MODE ||
+    "INT";
 
-    const mrp = calc.sp / (1 - discount);
+  mode.value = current;
+  CONFIG.ROUNDING.MODE = current;
+}
 
-    generatedOutput.push({
-      sku: r.sku,
-      brand: r.brand,
-      tp: r.tp,
-      mrp: Math.round(mrp)
+/* ----------------------------------
+   TABS
+-----------------------------------*/
+function bindTabs() {
+  const tabs =
+    document.querySelectorAll(".tab");
+
+  tabs.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.tab;
+
+      document
+        .querySelectorAll(".tab")
+        .forEach(x =>
+          x.classList.remove("active")
+        );
+
+      document
+        .querySelectorAll(".tab-panel")
+        .forEach(x =>
+          x.classList.remove("active")
+        );
+
+      btn.classList.add("active");
+
+      document
+        .getElementById(key + "Tab")
+        ?.classList.add("active");
+
+      STORE.ui.activeTab = key;
+
+      const renderKey = getRenderKey();
+
+      /* PRICING MASTER */
+      if (key === "master") {
+        if (
+          !pricingLoaded ||
+          lastRenderKey !== renderKey
+        ) {
+          /* WAIT for generate button */
+        }
+      }
+
+      /* SUMMARY */
+      if (key === "summary") {
+        if (
+          !summaryLoaded ||
+          summaryRenderKey !== renderKey
+        ) {
+          renderBrandSummary();
+
+          summaryLoaded = true;
+          summaryRenderKey = renderKey;
+        }
+      }
     });
   });
-
-  document.getElementById("downloadMrpBtn").disabled = false;
-}
-
-/* ---------------- DOWNLOAD ---------------- */
-function downloadCsv() {
-
-  const csv =
-    "sku,brand,tp,mrp\n" +
-    generatedOutput.map(r =>
-      `${r.sku},${r.brand},${r.tp},${r.mrp}`
-    ).join("\n");
-
-  const blob = new Blob([csv]);
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "mrp-output.csv";
-  a.click();
 }
