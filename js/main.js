@@ -1,369 +1,170 @@
-// js/main.js
-
 import { loadAllData } from "./data-loader.js";
 import { normalizeAllData } from "./normalizer.js";
-import { initCalculator } from "./calculator.js";
 import { renderPricingTable } from "./table.js";
-import { initExport } from "./export.js";
+import { renderBrandSummary } from "./brand-summary.js";
+import { solvePrice } from "./pricing-engine.js";
+import { STORE, CONFIG } from "./config.js";
 
-import {
-  STORE,
-  CONFIG
-} from "./config.js";
-
-import {
-  renderBrandSummary
-} from "./brand-summary.js";
-
-/* ----------------------------------
-   CACHE
------------------------------------*/
-let lastRenderKey = "";
-let summaryRenderKey = "";
 let pricingLoaded = false;
-let summaryLoaded = false;
 
-/* ----------------------------------
-   INIT
------------------------------------*/
-document.addEventListener(
-  "DOMContentLoaded",
-  initApp
-);
+let uploadedData = [];
+let generatedOutput = [];
 
-async function initApp() {
+document.addEventListener("DOMContentLoaded", init);
+
+async function init() {
   bindTabs();
   bindControls();
-  initCalculator();
-  initExport();
 
-  await refreshApp();
-}
-
-/* ----------------------------------
-   REFRESH
------------------------------------*/
-async function refreshApp() {
-  const ok =
-    await loadAllData();
-
-  if (!ok) return;
-
+  await loadAllData();
   normalizeAllData();
-
-  fillBrands();
-  fillTargets();
-  syncPricingModeUi();
-
-  STORE.ui.rowLimit = 50;
-
-  pricingLoaded = false;
-  summaryLoaded = false;
-
-  lastRenderKey = "";
-  summaryRenderKey = "";
-
-  /* fast first load:
-     do not render heavy tabs now */
 }
 
-/* ----------------------------------
-   CONTROLS
------------------------------------*/
-function bindControls() {
-  const refresh =
-    document.getElementById(
-      "refreshBtn"
-    );
-
-  const brand =
-    document.getElementById(
-      "brandFilter"
-    );
-
-  const target =
-    document.getElementById(
-      "profitTarget"
-    );
-
-  const mode =
-    document.getElementById(
-      "pricingMode"
-    );
-
-  const loadMore =
-    document.getElementById(
-      "loadMoreBtn"
-    );
-
-  refresh?.addEventListener(
-    "click",
-    refreshApp
-  );
-
-  brand?.addEventListener(
-    "change",
-    rerenderAll
-  );
-
-  target?.addEventListener(
-    "change",
-    rerenderAll
-  );
-
-  mode?.addEventListener(
-    "change",
-    e => {
-      const value =
-        e.target.value ||
-        "INT";
-
-      CONFIG.ROUNDING.MODE =
-        value;
-
-      STORE.ui.pricingMode =
-        value;
-
-      rerenderAll();
-    }
-  );
-
-  loadMore?.addEventListener(
-    "click",
-    () => {
-      STORE.ui.rowLimit += 50;
-
-      renderPricingTable();
-    }
-  );
-}
-
-/* ----------------------------------
-   SMART RENDER
------------------------------------*/
-function rerenderAll() {
-  STORE.ui.rowLimit = 50;
-
-  lastRenderKey = "";
-  summaryRenderKey = "";
-
-  if (pricingLoaded) {
-    renderPricingTable();
-    lastRenderKey =
-      getRenderKey();
-  }
-
-  if (
-    summaryLoaded &&
-    STORE.ui.activeTab ===
-      "summary"
-  ) {
-    renderBrandSummary();
-    summaryRenderKey =
-      getRenderKey();
-  }
-}
-
-function getRenderKey() {
-  const brand =
-    document.getElementById(
-      "brandFilter"
-    )?.value || "";
-
-  const target =
-    document.getElementById(
-      "profitTarget"
-    )?.value || "5";
-
-  const mode =
-    CONFIG.ROUNDING.MODE ||
-    "INT";
-
-  return [
-    brand,
-    target,
-    mode
-  ].join("|");
-}
-
-/* ----------------------------------
-   DROPDOWNS
------------------------------------*/
-function fillBrands() {
-  const brands = [
-    ...new Set(
-      STORE.normalized.products.map(
-        x => x.brand
-      )
-    )
-  ].sort();
-
-  const selects = [
-    document.getElementById(
-      "brandFilter"
-    ),
-    document.getElementById(
-      "manualBrand"
-    )
-  ];
-
-  selects.forEach(sel => {
-    if (!sel) return;
-
-    const first =
-      sel.id ===
-      "brandFilter"
-        ? `<option value="">All Brands</option>`
-        : `<option value="">Select Brand</option>`;
-
-    sel.innerHTML =
-      first +
-      brands
-        .map(
-          b =>
-            `<option value="${b}">${b}</option>`
-        )
-        .join("");
-  });
-}
-
-function fillTargets() {
-  const el =
-    document.getElementById(
-      "profitTarget"
-    );
-
-  if (!el) return;
-
-  el.innerHTML =
-    CONFIG.TARGET_OPTIONS
-      .map(opt => {
-        const selected =
-          String(
-            opt.value
-          ) === "5"
-            ? "selected"
-            : "";
-
-        return `
-          <option
-            value="${opt.value}"
-            ${selected}
-          >
-            ${opt.label}
-          </option>
-        `;
-      })
-      .join("");
-}
-
-function syncPricingModeUi() {
-  const mode =
-    document.getElementById(
-      "pricingMode"
-    );
-
-  if (!mode) return;
-
-  const current =
-    STORE.ui.pricingMode ||
-    CONFIG.ROUNDING.MODE ||
-    "INT";
-
-  mode.value = current;
-
-  CONFIG.ROUNDING.MODE =
-    current;
-}
-
-/* ----------------------------------
-   TABS
------------------------------------*/
+/* ---------------- TABS FIX ---------------- */
 function bindTabs() {
-  const tabs =
-    document.querySelectorAll(
-      ".tab"
-    );
+  const tabs = document.querySelectorAll(".tab");
 
   tabs.forEach(btn => {
-    btn.addEventListener(
-      "click",
-      () => {
-        const key =
-          btn.dataset.tab;
+    btn.addEventListener("click", () => {
 
-        document
-          .querySelectorAll(
-            ".tab"
-          )
-          .forEach(x =>
-            x.classList.remove(
-              "active"
-            )
-          );
+      tabs.forEach(t => t.classList.remove("active"));
+      btn.classList.add("active");
 
-        document
-          .querySelectorAll(
-            ".tab-panel"
-          )
-          .forEach(x =>
-            x.classList.remove(
-              "active"
-            )
-          );
+      document.querySelectorAll(".tab-panel")
+        .forEach(p => p.classList.remove("active"));
 
-        btn.classList.add(
-          "active"
-        );
+      document.getElementById(btn.dataset.tab + "Tab")
+        ?.classList.add("active");
 
-        document
-          .getElementById(
-            key + "Tab"
-          )
-          ?.classList.add(
-            "active"
-          );
-
-        STORE.ui.activeTab =
-          key;
-
-        const renderKey =
-          getRenderKey();
-
-        /* Lazy pricing */
-        if (
-          key === "master"
-        ) {
-          if (
-            !pricingLoaded ||
-            lastRenderKey !==
-              renderKey
-          ) {
-            renderPricingTable();
-
-            pricingLoaded = true;
-            lastRenderKey =
-              renderKey;
-          }
-        }
-
-        /* Lazy summary */
-        if (
-          key === "summary"
-        ) {
-          if (
-            !summaryLoaded ||
-            summaryRenderKey !==
-              renderKey
-          ) {
-            renderBrandSummary();
-
-            summaryLoaded = true;
-            summaryRenderKey =
-              renderKey;
-          }
-        }
+      if (btn.dataset.tab === "summary" && pricingLoaded) {
+        renderBrandSummary();
       }
-    );
+    });
   });
+}
+
+/* ---------------- CONTROLS ---------------- */
+function bindControls() {
+
+  document.getElementById("generatePricingBtn")
+    ?.addEventListener("click", () => {
+      renderPricingTable();
+      pricingLoaded = true;
+    });
+
+  document.getElementById("loadMoreBtn")
+    ?.addEventListener("click", () => {
+      STORE.ui.rowLimit += 50;
+      renderPricingTable();
+    });
+
+  document.getElementById("mrpFile")
+    ?.addEventListener("change", handleUpload);
+
+  document.getElementById("generateMrpBtn")
+    ?.addEventListener("click", generateMrp);
+
+  document.getElementById("downloadMrpBtn")
+    ?.addEventListener("click", downloadCsv);
+}
+
+/* ---------------- UPLOAD ---------------- */
+function handleUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+
+  reader.onload = ev => {
+    const rows = ev.target.result.split("\n");
+
+    uploadedData = rows.slice(1).map(r => {
+      const [sku, brand, tp] = r.split(",");
+      return {
+        sku: (sku || "").trim(),
+        brand: (brand || "").trim(),
+        tp: Number(tp || 0)
+      };
+    }).filter(x => x.sku && x.tp);
+
+    renderPreview(uploadedData);
+
+    generatedOutput = [];
+    document.getElementById("downloadMrpBtn").disabled = true;
+  };
+
+  reader.readAsText(file);
+}
+
+/* ---------------- PREVIEW ---------------- */
+function renderPreview(data) {
+  const body = document.getElementById("mrpPreviewBody");
+
+  if (!data.length) {
+    body.innerHTML = `<tr><td colspan="3">No data</td></tr>`;
+    return;
+  }
+
+  body.innerHTML = data.map(r => `
+    <tr>
+      <td>${r.sku}</td>
+      <td>${r.brand}</td>
+      <td>${r.tp}</td>
+    </tr>
+  `).join("");
+}
+
+/* ---------------- GENERATE ---------------- */
+function generateMrp() {
+
+  const target =
+    Number(document.getElementById("mrpTarget").value);
+
+  const discount =
+    Number(document.getElementById("mrpDiscount").value);
+
+  generatedOutput = [];
+
+  uploadedData.forEach(r => {
+
+    const product = {
+      tp: r.tp,
+      brand: r.brand,
+      articleType: "Saree",
+      styleId: "999",
+      status: "Manual"
+    };
+
+    const calc = solvePrice(product, target);
+    if (!calc) return;
+
+    const mrp = calc.sp / (1 - discount);
+
+    generatedOutput.push({
+      sku: r.sku,
+      brand: r.brand,
+      tp: r.tp,
+      mrp: Math.round(mrp)
+    });
+  });
+
+  document.getElementById("downloadMrpBtn").disabled = false;
+}
+
+/* ---------------- DOWNLOAD ---------------- */
+function downloadCsv() {
+
+  const csv =
+    "sku,brand,tp,mrp\n" +
+    generatedOutput.map(r =>
+      `${r.sku},${r.brand},${r.tp},${r.mrp}`
+    ).join("\n");
+
+  const blob = new Blob([csv]);
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "mrp-output.csv";
+  a.click();
 }
