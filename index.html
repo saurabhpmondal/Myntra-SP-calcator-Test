@@ -14,6 +14,7 @@
 <header class="topbar">
   <div class="brand-wrap">
     <div class="logo-box">M</div>
+
     <div>
       <h1 class="app-title">Myntra Reverse Pricing</h1>
       <div class="sub-title">TP Based Smart Price Engine</div>
@@ -21,12 +22,18 @@
   </div>
 
   <div class="top-actions">
-    <button id="refreshBtn" class="btn btn-dark">
-      Refresh Data
-    </button>
+    <button id="refreshBtn" class="btn btn-dark">Refresh Data</button>
   </div>
 </header>
 
+<!-- ✅ RESTORED STATUS STRIP -->
+<section class="status-strip">
+  <div class="pill" id="loadStatus">Waiting...</div>
+  <div class="pill" id="recordStatus">0 Styles</div>
+  <div class="pill" id="timeStatus">--</div>
+</section>
+
+<!-- CONTROLS -->
 <section class="control-panel">
 
   <div class="control-item">
@@ -47,7 +54,13 @@
     </select>
   </div>
 
-  <!-- ✅ GENERATE PRICING BUTTON (PRESERVED) -->
+  <!-- ✅ RESTORED EXPORT -->
+  <div class="control-item">
+    <label>&nbsp;</label>
+    <button id="exportBtn" class="btn">Export CSV</button>
+  </div>
+
+  <!-- ✅ ADDED GENERATE BUTTON -->
   <div class="control-item">
     <label>&nbsp;</label>
     <button id="generatePricingBtn" class="btn btn-dark">
@@ -71,7 +84,7 @@
 <!-- SEARCH -->
 <section id="searchTab" class="tab-panel active">
   <div class="card">
-    <input id="calcStyleId" placeholder="Enter Style ID or SKU">
+    <input id="calcStyleId" placeholder="Enter Style ID or ERP SKU">
     <button id="calcBtn">Search</button>
     <button id="clearCalcBtn">Clear</button>
     <div id="calcOutput">Search style and view pricing.</div>
@@ -81,7 +94,6 @@
 <!-- PRICING -->
 <section id="masterTab" class="tab-panel">
   <div class="card">
-
     <div class="table-wrap">
       <table id="pricingTable">
         <thead id="pricingHead"></thead>
@@ -96,7 +108,6 @@
     <button id="loadMoreBtn" class="btn full">
       Load More 50 Rows
     </button>
-
   </div>
 </section>
 
@@ -113,7 +124,7 @@
   </div>
 </section>
 
-<!-- ✅ MRP GENERATOR -->
+<!-- ✅ MRP GENERATOR (FULLY CORRECT FLOW) -->
 <section id="mrpTab" class="tab-panel">
 
   <div class="card">
@@ -121,7 +132,7 @@
 
     <input type="file" id="mrpFile">
 
-    <!-- PREVIEW TABLE -->
+    <!-- PREVIEW -->
     <div class="table-wrap" style="margin-top:12px">
       <table>
         <thead>
@@ -133,9 +144,7 @@
         </thead>
         <tbody id="mrpPreviewBody">
           <tr>
-            <td colspan="3" class="center">
-              Upload file to preview
-            </td>
+            <td colspan="3" class="center">Upload file to preview</td>
           </tr>
         </tbody>
       </table>
@@ -145,7 +154,6 @@
   <div class="card">
 
     <div class="grid-4">
-
       <div>
         <label>TP Margin</label>
         <select id="mrpTarget">
@@ -163,7 +171,6 @@
           <option value="0.7">70%</option>
         </select>
       </div>
-
     </div>
 
     <button id="generateMrpBtn" class="btn btn-dark full">
@@ -187,6 +194,8 @@
 </section>
 
 </main>
+
+<div id="toast" class="toast"></div>
 
 <script type="module" src="js/main.js"></script>
 
