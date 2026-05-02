@@ -1,31 +1,44 @@
-// js/main.js
-
 import { loadAllData } from "./data-loader.js";
 import { normalizeAllData } from "./normalizer.js";
 import { renderPricingTable } from "./table.js";
 import { renderBrandSummary } from "./brand-summary.js";
 import { solvePrice } from "./pricing-engine.js";
 
-import { STORE } from "./config.js";
-
 let pricingLoaded = false;
+let uploadedData = [];
+let generatedOutput = [];
 
-/* INIT */
 document.addEventListener("DOMContentLoaded", init);
 
 async function init() {
   bindTabs();
   bindControls();
-  await refresh();
+
+  await loadAllData();
+  normalizeAllData();
 }
 
-/* LOAD */
-async function refresh() {
-  const ok = await loadAllData();
-  if (!ok) return;
+/* TABS */
+function bindTabs() {
+  const tabs = document.querySelectorAll(".tab");
 
-  normalizeAllData();
-  pricingLoaded = false;
+  tabs.forEach(btn => {
+    btn.onclick = () => {
+
+      tabs.forEach(t => t.classList.remove("active"));
+      btn.classList.add("active");
+
+      document.querySelectorAll(".tab-panel")
+        .forEach(p => p.classList.remove("active"));
+
+      document.getElementById(btn.dataset.tab + "Tab")
+        ?.classList.add("active");
+
+      if (btn.dataset.tab === "summary" && pricingLoaded) {
+        renderBrandSummary();
+      }
+    };
+  });
 }
 
 /* CONTROLS */
@@ -37,56 +50,38 @@ function bindControls() {
       pricingLoaded = true;
     });
 
+  document.getElementById("verifyBtn")
+    ?.addEventListener("click", verifyFile);
+
   document.getElementById("generateMrpBtn")
     ?.addEventListener("click", generateMrp);
 
-  document.getElementById("verifyBtn")
-    ?.addEventListener("click", verifyFile);
+  document.getElementById("downloadMrpBtn")
+    ?.addEventListener("click", downloadMrp);
 }
 
-/* TABS */
-function bindTabs() {
-  document.querySelectorAll(".tab").forEach(btn => {
-    btn.onclick = () => {
-      const key = btn.dataset.tab;
-
-      document.querySelectorAll(".tab-panel")
-        .forEach(x => x.classList.remove("active"));
-
-      document.getElementById(key + "Tab")
-        ?.classList.add("active");
-
-      if (key === "summary" && pricingLoaded) {
-        renderBrandSummary();
-      }
-    };
-  });
-}
-
-/* =========================
-   MRP GENERATOR
-========================= */
-
-let uploadedData = [];
-
+/* VERIFY */
 function verifyFile() {
-  const file =
-    document.getElementById("mrpFile").files[0];
 
+  const file = document.getElementById("mrpFile").files[0];
   if (!file) return;
 
   const reader = new FileReader();
 
   reader.onload = e => {
+
     const rows = e.target.result.split("\n");
 
     uploadedData = rows.slice(1).map(r => {
       const [sku, brand, tp] = r.split(",");
-      return { sku, brand, tp: Number(tp) };
-    });
+      return {
+        sku: sku?.trim(),
+        brand: brand?.trim(),
+        tp: Number(tp)
+      };
+    }).filter(x => x.sku && x.tp);
 
-    document.getElementById("mrpPreview").innerHTML =
-      `Loaded ${uploadedData.length} rows`;
+    renderPreview(uploadedData);
 
     document.getElementById("generateMrpBtn").disabled = false;
   };
@@ -94,6 +89,20 @@ function verifyFile() {
   reader.readAsText(file);
 }
 
+/* PREVIEW */
+function renderPreview(data) {
+  const body = document.getElementById("mrpPreviewBody");
+
+  body.innerHTML = data.map(r => `
+    <tr>
+      <td>${r.sku}</td>
+      <td>${r.brand}</td>
+      <td>${r.tp}</td>
+    </tr>
+  `).join("");
+}
+
+/* GENERATE */
 function generateMrp() {
 
   const target =
@@ -102,7 +111,7 @@ function generateMrp() {
   const discount =
     Number(document.getElementById("mrpDiscount").value);
 
-  const output = [];
+  generatedOutput = [];
 
   uploadedData.forEach(r => {
 
@@ -111,17 +120,15 @@ function generateMrp() {
       brand: r.brand,
       articleType: "Saree",
       styleId: "999",
-      status: "Manual",
-      mrp: 0
+      status: "Manual"
     };
 
     const calc = solvePrice(product, target);
-
     if (!calc) return;
 
     const mrp = calc.sp / (1 - discount);
 
-    output.push({
+    generatedOutput.push({
       sku: r.sku,
       brand: r.brand,
       tp: r.tp,
@@ -129,13 +136,15 @@ function generateMrp() {
     });
   });
 
-  downloadCsv(output);
+  document.getElementById("downloadMrpBtn").disabled = false;
 }
 
-function downloadCsv(rows) {
+/* DOWNLOAD */
+function downloadMrp() {
+
   const csv =
     "sku,brand,tp,mrp\n" +
-    rows.map(r =>
+    generatedOutput.map(r =>
       `${r.sku},${r.brand},${r.tp},${r.mrp}`
     ).join("\n");
 
@@ -144,6 +153,6 @@ function downloadCsv(rows) {
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "mrp-output.csv";
+  a.download = "mrp.csv";
   a.click();
 }
