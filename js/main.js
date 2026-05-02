@@ -5,6 +5,10 @@ import { renderBrandSummary } from "./brand-summary.js";
 import { solvePrice } from "./pricing-engine.js";
 import { STORE, CONFIG } from "./config.js";
 
+/* ✅ ADDED (missing earlier) */
+import { initCalculator } from "./calculator.js";
+import { initExport } from "./export.js";
+
 let pricingLoaded = false;
 
 let uploadedData = [];
@@ -12,15 +16,23 @@ let generatedOutput = [];
 
 document.addEventListener("DOMContentLoaded", init);
 
+/* ---------------- INIT ---------------- */
 async function init() {
   bindTabs();
   bindControls();
 
+  initCalculator();   // ✅ FIXED
+  initExport();       // ✅ FIXED
+
   await loadAllData();
   normalizeAllData();
+
+  fillBrands();       // ✅ FIXED
+  fillTargets();      // ✅ FIXED
+  updateStatus();     // ✅ FIXED
 }
 
-/* ---------------- TABS FIX ---------------- */
+/* ---------------- TABS ---------------- */
 function bindTabs() {
   const tabs = document.querySelectorAll(".tab");
 
@@ -68,6 +80,63 @@ function bindControls() {
     ?.addEventListener("click", downloadCsv);
 }
 
+/* ---------------- STATUS ---------------- */
+function updateStatus() {
+  const load = document.getElementById("loadStatus");
+  const rec = document.getElementById("recordStatus");
+  const time = document.getElementById("timeStatus");
+
+  if (load) load.textContent = "Data Loaded";
+
+  if (rec) {
+    rec.textContent =
+      (STORE.normalized.products?.length || 0) + " Styles";
+  }
+
+  if (time) {
+    time.textContent =
+      new Date().toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+  }
+}
+
+/* ---------------- BRAND FILTER ---------------- */
+function fillBrands() {
+  const brands = [
+    ...new Set(
+      STORE.normalized.products.map(x => x.brand)
+    )
+  ].sort();
+
+  const el = document.getElementById("brandFilter");
+
+  if (!el) return;
+
+  el.innerHTML =
+    `<option value="">All Brands</option>` +
+    brands.map(b =>
+      `<option value="${b}">${b}</option>`
+    ).join("");
+}
+
+/* ---------------- TARGET DROPDOWN ---------------- */
+function fillTargets() {
+  const el = document.getElementById("profitTarget");
+
+  if (!el) return;
+
+  el.innerHTML =
+    CONFIG.TARGET_OPTIONS
+      .map(opt => `
+        <option value="${opt.value}">
+          ${opt.label}
+        </option>
+      `)
+      .join("");
+}
+
 /* ---------------- UPLOAD ---------------- */
 function handleUpload(e) {
   const file = e.target.files[0];
@@ -91,6 +160,10 @@ function handleUpload(e) {
 
     generatedOutput = [];
     document.getElementById("downloadMrpBtn").disabled = true;
+
+    if (!uploadedData.length) {
+      alert("Invalid CSV format");
+    }
   };
 
   reader.readAsText(file);
@@ -100,8 +173,11 @@ function handleUpload(e) {
 function renderPreview(data) {
   const body = document.getElementById("mrpPreviewBody");
 
+  if (!body) return;
+
   if (!data.length) {
-    body.innerHTML = `<tr><td colspan="3">No data</td></tr>`;
+    body.innerHTML =
+      `<tr><td colspan="3">No data</td></tr>`;
     return;
   }
 
@@ -114,7 +190,7 @@ function renderPreview(data) {
   `).join("");
 }
 
-/* ---------------- GENERATE ---------------- */
+/* ---------------- GENERATE MRP ---------------- */
 function generateMrp() {
 
   const target =
