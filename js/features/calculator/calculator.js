@@ -3,13 +3,13 @@
 import {
   money,
   showToast
-} from "./config.js";
+} from "./core/config.js";
 
 import {
   getProductByStyle,
   getProductBySku,
   getBrandArticleType
-} from "./normalizer.js";
+} from "./core/normalizer.js";
 
 import {
   solvePrice,
