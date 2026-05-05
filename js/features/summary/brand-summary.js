@@ -1,7 +1,7 @@
 // js/brand-summary.js
 
-import { STORE, money } from "./config.js";
-import { solvePrice } from "./pricing-engine.js";
+import { STORE, money } from "./core/config.js";
+import { solvePrice } from "../../engine/pricing-engine.js";
 
 /* ----------------------------------
    PUBLIC
