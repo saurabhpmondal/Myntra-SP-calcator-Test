@@ -1,91 +1,67 @@
-// js/bulk-mrp.js
+// js/features/mrp/bulk-mrp.js
 
-import { solvePrice } from "./pricing-engine.js";
-import { money, showToast } from "./config.js";
+import { solvePrice } from "../../engine/pricing-engine.js";
 
-let rawData = [];
-let verified = false;
-let outputData = [];
+let uploadedData = [];
+let generatedOutput = [];
 
-export function initBulk() {
-  bindEvents();
+export function initMrpEngine() {
+
+  document.getElementById("mrpFile")
+    ?.addEventListener("change", handleUpload);
+
+  document.getElementById("generateMrpBtn")
+    ?.addEventListener("click", generateMrp);
+
+  document.getElementById("downloadMrpBtn")
+    ?.addEventListener("click", downloadCsv);
 }
 
-/* EVENTS */
-function bindEvents() {
-  document
-    .getElementById("bulkFile")
-    ?.addEventListener("change", handleFile);
-
-  document
-    .getElementById("verifyBtn")
-    ?.addEventListener("click", verifyData);
-
-  document
-    .getElementById("generateBulkBtn")
-    ?.addEventListener("click", generateMRP);
-
-  document
-    .getElementById("downloadBulkBtn")
-    ?.addEventListener("click", downloadCSV);
-}
-
-/* FILE READ */
-function handleFile(e) {
+/* ---------------- UPLOAD ---------------- */
+function handleUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
 
-  reader.onload = evt => {
-    const text = evt.target.result;
-    parseCSV(text);
+  reader.onload = ev => {
+    const rows = ev.target.result
+      .split("\n")
+      .map(r => r.replace(/\r/g, "").trim())
+      .filter(Boolean);
+
+    uploadedData = rows.slice(1).map(r => {
+      const [sku, brand, tp] = r.split(",");
+
+      return {
+        sku: (sku || "").trim(),
+        brand: (brand || "").trim(),
+        tp: Number(tp || 0)
+      };
+    }).filter(x => x.sku && x.tp);
+
+    renderPreview(uploadedData);
+
+    generatedOutput = [];
+    document.getElementById("downloadMrpBtn").disabled = true;
   };
 
   reader.readAsText(file);
 }
 
-/* PARSE */
-function parseCSV(text) {
-  const rows = text.split("\n").map(r => r.trim()).filter(Boolean);
+/* ---------------- PREVIEW ---------------- */
+function renderPreview(data) {
+  const body = document.getElementById("mrpPreviewBody");
 
-  const headers = rows[0].toLowerCase().split(",");
+  if (!body) return;
 
-  const skuIdx = headers.indexOf("sku");
-  const brandIdx = headers.indexOf("brand");
-  const tpIdx = headers.indexOf("tp");
-
-  if (skuIdx === -1 || brandIdx === -1 || tpIdx === -1) {
-    alert("CSV must have: sku, brand, tp");
+  if (!data.length) {
+    body.innerHTML =
+      `<tr><td colspan="3" class="center">No data</td></tr>`;
     return;
   }
 
-  rawData = rows.slice(1).map(row => {
-    const cols = row.split(",");
-
-    return {
-      sku: cols[skuIdx]?.trim(),
-      brand: cols[brandIdx]?.trim(),
-      tp: Number(cols[tpIdx])
-    };
-  });
-
-  renderPreview();
-  resetState();
-}
-
-/* PREVIEW */
-function renderPreview() {
-  const body = document.getElementById("bulkBody");
-
-  if (!rawData.length) {
-    body.innerHTML = `
-      <tr><td colspan="3" class="center">No data</td></tr>
-    `;
-    return;
-  }
-
-  body.innerHTML = rawData.slice(0, 50).map(r => `
+  body.innerHTML = data.map(r => `
     <tr>
       <td>${r.sku}</td>
       <td>${r.brand}</td>
@@ -94,107 +70,59 @@ function renderPreview() {
   `).join("");
 }
 
-/* VERIFY */
-function verifyData() {
-  let valid = true;
+/* ---------------- GENERATE ---------------- */
+function generateMrp() {
 
-  rawData.forEach(r => {
-    if (!r.sku || !r.brand || isNaN(r.tp)) {
-      valid = false;
-    }
-  });
+  const target =
+    Number(document.getElementById("mrpTarget")?.value || 5);
 
-  if (!valid) {
-    alert("Invalid data found. Fix CSV.");
-    return;
-  }
+  const discount =
+    Number(document.getElementById("mrpDiscount")?.value || 0.6);
 
-  verified = true;
+  generatedOutput = [];
 
-  document.getElementById("generateBulkBtn").disabled = false;
-
-  showToast("Data verified");
-}
-
-/* GENERATE */
-async function generateMRP() {
-  if (!verified) return;
-
-  const margin = Number(
-    document.getElementById("bulkMargin").value
-  );
-
-  const discount = Number(
-    document.getElementById("bulkDiscount").value
-  );
-
-  const factor = 1 - discount / 100;
-
-  outputData = [];
-
-  for (let i = 0; i < rawData.length; i++) {
-    const row = rawData[i];
+  uploadedData.forEach(r => {
 
     const product = {
-      brand: row.brand,
+      tp: r.tp,
+      brand: r.brand,
       articleType: "Saree",
-      tp: row.tp,
-      mrp: row.tp * 3,
-      styleId: "BULK",
-      status: "bulk"
+      styleId: "999",
+      status: "Manual"
     };
 
-    const calc = solvePrice(product, margin);
+    const calc = solvePrice(product, target);
+    if (!calc) return;
 
-    if (!calc) continue;
+    const mrp = calc.sp / (1 - discount);
 
-    const sp = calc.sp;
-
-    const mrp = Math.round(sp / factor);
-
-    outputData.push({
-      sku: row.sku,
-      brand: row.brand,
-      tp: row.tp,
-      mrp
+    generatedOutput.push({
+      sku: r.sku,
+      brand: r.brand,
+      tp: r.tp,
+      mrp: Math.round(mrp)
     });
-
-    if (i % 100 === 0) {
-      await pause();
-    }
-  }
-
-  document.getElementById("downloadBulkBtn").disabled = false;
-
-  showToast("MRP Generated");
-}
-
-/* DOWNLOAD */
-function downloadCSV() {
-  let csv = "sku,brand,tp,mrp\n";
-
-  outputData.forEach(r => {
-    csv += `${r.sku},${r.brand},${r.tp},${r.mrp}\n`;
   });
 
-  const blob = new Blob([csv], { type: "text/csv" });
+  document.getElementById("downloadMrpBtn").disabled = false;
+}
+
+/* ---------------- DOWNLOAD ---------------- */
+function downloadCsv() {
+
+  if (!generatedOutput.length) return;
+
+  const csv =
+    "sku,brand,tp,mrp\n" +
+    generatedOutput.map(r =>
+      `${r.sku},${r.brand},${r.tp},${r.mrp}`
+    ).join("\n");
+
+  const blob = new Blob([csv]);
+  const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "mrp_output.csv";
+  a.href = url;
+  a.download = "mrp-output.csv";
   a.click();
-}
-
-/* RESET */
-function resetState() {
-  verified = false;
-  outputData = [];
-
-  document.getElementById("generateBulkBtn").disabled = true;
-  document.getElementById("downloadBulkBtn").disabled = true;
-}
-
-/* NON BLOCKING */
-function pause() {
-  return new Promise(res => setTimeout(res, 0));
 }
