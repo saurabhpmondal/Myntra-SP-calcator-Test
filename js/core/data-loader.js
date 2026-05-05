@@ -4,7 +4,7 @@ import {
   CONFIG,
   STORE,
   nowTime
-} from "./config.js";
+} from "./core/config.js";
 
 /* ----------------------------------
    PUBLIC: LOAD ALL SHEETS
