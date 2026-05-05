@@ -93,13 +93,15 @@ function generateMrp() {
     const calc = solvePrice(product, target);
     if (!calc) return;
 
-    const mrp = calc.sp / (1 - discount);
+    const sp = Math.round(calc.sp); // ADDED
+    const mrp = Math.round(sp / (1 - discount));
 
     generatedOutput.push({
       sku: r.sku,
       brand: r.brand,
       tp: r.tp,
-      mrp: Math.round(mrp)
+      sp,   // ADDED
+      mrp
     });
   });
 
@@ -115,6 +117,7 @@ function renderOutput() {
       <td>${r.sku}</td>
       <td>${r.brand}</td>
       <td>${r.tp}</td>
+      <td><b>${r.sp}</b></td> <!-- ADDED -->
       <td><b>${r.mrp}</b></td>
     </tr>
   `).join("");
@@ -126,9 +129,9 @@ function renderOutput() {
 function downloadCsv() {
 
   const csv =
-    "sku,brand,tp,mrp\n" +
+    "sku,brand,tp,isp,mrp\n" +
     generatedOutput.map(r =>
-      `${r.sku},${r.brand},${r.tp},${r.mrp}`
+      `${r.sku},${r.brand},${r.tp},${r.sp},${r.mrp}`
     ).join("\n");
 
   const blob = new Blob([csv]);
