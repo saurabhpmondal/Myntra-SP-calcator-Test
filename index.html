@@ -123,14 +123,17 @@
 </section>
 
 <!-- MRP GENERATOR -->
+
+<!-- MRP GENERATOR -->
 <section id="mrpTab" class="tab-panel">
 
-  <div class="card">
+  <!-- Upload -->
+  <div class="card compact">
     <div class="card-title">Upload CSV</div>
 
-    <input type="file" id="mrpFile">
+    <input type="file" id="mrpFile" class="file-input">
 
-    <div class="table-wrap" style="margin-top:12px">
+    <div class="table-wrap compact">
       <table>
         <thead>
           <tr>
@@ -141,16 +144,19 @@
         </thead>
         <tbody id="mrpPreviewBody">
           <tr>
-            <td colspan="3" class="center">Upload file to preview</td>
+            <td colspan="3" class="center">
+              Upload file to preview
+            </td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <div class="card">
+  <!-- Controls -->
+  <div class="card compact">
+    <div class="grid-3">
 
-    <div class="grid-4">
       <div>
         <label>TP Margin</label>
         <select id="mrpTarget">
@@ -168,15 +174,40 @@
           <option value="0.7">70%</option>
         </select>
       </div>
+
+      <div class="align-end">
+        <button id="generateMrpBtn" class="btn btn-dark">
+          Generate MRP
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Output -->
+  <div class="card compact" id="mrpOutputCard" style="display:none">
+
+    <div class="card-title">Generated MRP</div>
+
+    <div class="table-wrap compact">
+      <table>
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Brand</th>
+            <th>TP</th>
+            <th>MRP</th>
+          </tr>
+        </thead>
+        <tbody id="mrpResultBody"></tbody>
+      </table>
     </div>
 
-    <button id="generateMrpBtn" class="btn btn-dark full">
-      Generate MRP
-    </button>
-
-    <button id="downloadMrpBtn" class="btn full" disabled>
-      Download CSV
-    </button>
+    <div class="right" style="margin-top:10px">
+      <button id="downloadMrpBtn" class="btn">
+        Download CSV
+      </button>
+    </div>
 
   </div>
 
