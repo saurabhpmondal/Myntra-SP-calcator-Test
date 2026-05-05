@@ -1,12 +1,12 @@
-// js/table.js
+// js/features/pricing/table.js
 
 import {
   STORE,
   money,
   showToast
-} from "./core/config.js";
+} from "../../core/config.js";
 
-import { solvePrice } from "./core/pricing-engine.js";
+import { solvePrice } from "../../engine/pricing-engine.js";
 
 /* ---------------------------------- */
 let visibleCount = 50;
@@ -14,34 +14,16 @@ let salesMap = null;
 
 /* ---------------------------------- */
 export function renderPricingTable() {
-  const head =
-    document.getElementById(
-      "pricingHead"
-    );
-
-  const body =
-    document.getElementById(
-      "pricingBody"
-    );
-
-  const more =
-    document.getElementById(
-      "loadMoreBtn"
-    );
+  const head = document.getElementById("pricingHead");
+  const body = document.getElementById("pricingBody");
+  const more = document.getElementById("loadMoreBtn");
 
   if (!head || !body) return;
 
-  const allRows =
-    getVisibleRows();
+  const allRows = getVisibleRows();
+  const rows = allRows.slice(0, visibleCount);
 
-  const rows =
-    allRows.slice(
-      0,
-      visibleCount
-    );
-
-  head.innerHTML =
-    headerHtml();
+  head.innerHTML = headerHtml();
 
   if (!rows.length) {
     body.innerHTML = `
@@ -51,60 +33,36 @@ export function renderPricingTable() {
         </td>
       </tr>
     `;
-
-    if (more)
-      more.style.display =
-        "none";
-
+    if (more) more.style.display = "none";
     return;
   }
 
-  body.innerHTML =
-    rows.map(
-      rowHtml
-    ).join("");
+  body.innerHTML = rows.map(rowHtml).join("");
 
   if (more) {
     more.style.display =
-      visibleCount >=
-      allRows.length
-        ? "none"
-        : "block";
+      visibleCount >= allRows.length ? "none" : "block";
 
     more.textContent =
       `Load More 50 Rows (${rows.length}/${allRows.length})`;
   }
 
-  showToast(
-    "Pricing updated"
-  );
+  showToast("Pricing updated");
 }
 
 /* ---------------------------------- */
 export function getVisibleRows() {
   const targetRaw =
-    document.getElementById(
-      "profitTarget"
-    )?.value || "5";
+    document.getElementById("profitTarget")?.value || "5";
 
   const brand =
-    (
-      document.getElementById(
-        "brandFilter"
-      )?.value || ""
-    ).toLowerCase();
+    (document.getElementById("brandFilter")?.value || "").toLowerCase();
 
-  let data = [
-    ...STORE.normalized
-      .products
-  ];
+  let data = [...STORE.normalized.products];
 
   if (brand) {
     data = data.filter(
-      x =>
-        x.brand
-          .toLowerCase() ===
-        brand
+      x => x.brand.toLowerCase() === brand
     );
   }
 
@@ -113,23 +71,13 @@ export function getVisibleRows() {
   const rows = [];
 
   data.forEach(product => {
-    const target =
-      getTargetPct(
-        product,
-        targetRaw
-      );
+    const target = getTargetPct(product, targetRaw);
 
-    const calc =
-      solvePrice(
-        product,
-        target
-      );
+    const calc = solvePrice(product, target);
 
     if (calc) {
       calc.saleUnits =
-        salesMap[
-          product.styleId
-        ] || 0;
+        salesMap[product.styleId] || 0;
 
       rows.push(calc);
     }
@@ -139,30 +87,17 @@ export function getVisibleRows() {
 }
 
 /* ---------------------------------- */
-function getTargetPct(
-  product,
-  targetRaw
-) {
-  if (
-    targetRaw ===
-    "BIG_EVENT"
-  ) {
+function getTargetPct(product, targetRaw) {
+  if (targetRaw === "BIG_EVENT") {
     const status =
-      String(
-        product.status || ""
-      )
+      String(product.status || "")
         .toLowerCase()
         .trim();
 
-    return status ===
-      "continue"
-      ? -15
-      : -30;
+    return status === "continue" ? -15 : -30;
   }
 
-  return Number(
-    targetRaw || 5
-  );
+  return Number(targetRaw || 5);
 }
 
 /* ---------------------------------- */
@@ -171,28 +106,18 @@ function buildSalesMap() {
 
   salesMap = {};
 
-  const rows =
-    STORE.raw.orders ||
-    [];
+  const rows = STORE.raw.orders || [];
 
   rows.forEach(row => {
     const styleId =
-      String(
-        row.style_id ||
-          row.styleid ||
-          ""
-      )
+      String(row.style_id || row.styleid || "")
         .replace(/\.0$/, "")
         .trim();
 
     if (!styleId) return;
 
-    salesMap[
-      styleId
-    ] =
-      (salesMap[
-        styleId
-      ] || 0) + 1;
+    salesMap[styleId] =
+      (salesMap[styleId] || 0) + 1;
   });
 }
 
@@ -236,9 +161,7 @@ function headerHtml() {
 /* ---------------------------------- */
 function rowHtml(r) {
   const cls =
-    r.tpProfitRs >= 0
-      ? "success"
-      : "danger";
+    r.tpProfitRs >= 0 ? "success" : "danger";
 
   return `
     <tr>
