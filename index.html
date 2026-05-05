@@ -22,19 +22,16 @@
   </div>
 
   <div class="top-actions">
-    <!-- kept hidden but not removed -->
     <button id="refreshBtn" class="btn btn-dark hidden">Refresh Data</button>
   </div>
 </header>
 
-<!-- ❌ HIDDEN STATUS -->
 <section class="status-strip hidden">
   <div class="pill" id="loadStatus"></div>
   <div class="pill" id="recordStatus"></div>
   <div class="pill" id="timeStatus"></div>
 </section>
 
-<!-- ❌ HIDDEN CONTROLS -->
 <section class="control-panel hidden">
   <div class="control-item">
     <label>Profit Target</label>
@@ -62,7 +59,6 @@
   </div>
 </section>
 
-<!-- ✅ ONLY 2 TABS -->
 <section class="tabs">
   <button class="tab active" data-tab="mrp">MRP Generator</button>
   <button class="tab" data-tab="calculator">Calculator</button>
@@ -70,22 +66,22 @@
 
 <main class="page-wrap">
 
-<!-- MRP GENERATOR -->
 <section id="mrpTab" class="tab-panel active">
 
   <div class="card compact">
     
-<div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
-  <span>Upload CSV</span>
+    <div class="card-title" style="display:flex;justify-content:space-between;align-items:center;">
+      <span>Upload CSV</span>
 
-  <a href="assets/sample-mrp.csv" download class="btn">
-    Download Sample
-  </a>
-</div>
+      <a href="assets/sample-mrp.csv" download class="btn">
+        Download Sample
+      </a>
+    </div>
 
-<div class="hint-text">
-  Download sample → fill SKU, Brand, TP → upload file
-</div>
+    <div class="hint-text">
+      Download sample → fill SKU, Brand, TP → upload file
+    </div>
+
     <input type="file" id="mrpFile" class="file-input">
 
     <div class="table-wrap compact">
@@ -149,6 +145,7 @@
             <th>SKU</th>
             <th>Brand</th>
             <th>TP</th>
+            <th>ISP</th> <!-- ADDED -->
             <th>MRP</th>
           </tr>
         </thead>
@@ -166,7 +163,6 @@
 
 </section>
 
-<!-- CALCULATOR -->
 <section id="calculatorTab" class="tab-panel">
   <div class="card">
     <div class="card-title">Manual Calculator</div>
