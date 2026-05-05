@@ -4,9 +4,9 @@ import {
   STORE,
   money,
   showToast
-} from "./config.js";
+} from "./core/config.js";
 
-import { solvePrice } from "./pricing-engine.js";
+import { solvePrice } from "./core/pricing-engine.js";
 
 /* ---------------------------------- */
 let visibleCount = 50;
