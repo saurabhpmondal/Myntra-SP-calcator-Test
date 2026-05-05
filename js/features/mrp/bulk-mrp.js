@@ -42,6 +42,9 @@ function handleUpload(e) {
 
     renderPreview(uploadedData);
 
+    /* RESET OUTPUT UI */
+    clearOutput();
+
     generatedOutput = [];
     document.getElementById("downloadMrpBtn").disabled = true;
   };
@@ -49,10 +52,9 @@ function handleUpload(e) {
   reader.readAsText(file);
 }
 
-/* ---------------- PREVIEW ---------------- */
+/* ---------------- PREVIEW TABLE ---------------- */
 function renderPreview(data) {
   const body = document.getElementById("mrpPreviewBody");
-
   if (!body) return;
 
   if (!data.length) {
@@ -104,7 +106,66 @@ function generateMrp() {
     });
   });
 
+  renderOutputTable(generatedOutput);
+
   document.getElementById("downloadMrpBtn").disabled = false;
+}
+
+/* ---------------- OUTPUT TABLE (NEW) ---------------- */
+function renderOutputTable(data) {
+
+  let container =
+    document.getElementById("mrpOutputWrap");
+
+  /* Create if not exists */
+  if (!container) {
+    container = document.createElement("div");
+    container.id = "mrpOutputWrap";
+    container.className = "card";
+
+    container.innerHTML = `
+      <div class="card-title">Generated MRP</div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>SKU</th>
+              <th>Brand</th>
+              <th>TP</th>
+              <th>MRP</th>
+            </tr>
+          </thead>
+          <tbody id="mrpOutputBody"></tbody>
+        </table>
+      </div>
+    `;
+
+    document
+      .getElementById("mrpTab")
+      ?.appendChild(container);
+  }
+
+  const body =
+    document.getElementById("mrpOutputBody");
+
+  if (!body) return;
+
+  body.innerHTML = data.map(r => `
+    <tr>
+      <td>${r.sku}</td>
+      <td>${r.brand}</td>
+      <td>${r.tp}</td>
+      <td><b>${r.mrp}</b></td>
+    </tr>
+  `).join("");
+}
+
+/* ---------------- CLEAR OUTPUT ---------------- */
+function clearOutput() {
+  const el =
+    document.getElementById("mrpOutputWrap");
+
+  if (el) el.remove();
 }
 
 /* ---------------- DOWNLOAD ---------------- */
