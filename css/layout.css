@@ -342,3 +342,42 @@
     left:225px;
   }
 }
+
+.card.compact {
+  padding: 12px 14px;
+}
+
+.table-wrap.compact table {
+  font-size: 13px;
+}
+
+.btn {
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: 6px;
+}
+
+.btn.full {
+  width: auto;
+}
+
+.file-input {
+  padding: 6px;
+  font-size: 13px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 12px;
+}
+
+.align-end {
+  display: flex;
+  align-items: end;
+}
+
+.right {
+  display: flex;
+  justify-content: flex-end;
+}
