@@ -1,11 +1,11 @@
-// js/pricing-engine.js
+// js/engine/pricing-engine.js
 
-import { CONFIG, num } from "./core/config.js";
+import { CONFIG, num } from "../core/config.js"; // ✅ FIXED
 import {
   findCommercial,
   findGta,
   getRtv
-} from "./core/normalizer.js";
+} from "../core/normalizer.js"; // ✅ FIXED
 
 /* ----------------------------------
    PUBLIC
@@ -71,7 +71,6 @@ export function evaluatePrice(
       product.styleId
     );
 
-  /* STEP 1 */
   let comm =
     findCommercial(
       product.brand,
@@ -83,7 +82,6 @@ export function evaluatePrice(
     comm.level ||
     "default";
 
-  /* STEP 2 */
   const gtaRow =
     findGta(
       product.brand,
@@ -94,15 +92,12 @@ export function evaluatePrice(
 
   const gta =
     gtaRow
-      ? num(
-          gtaRow.gtaCharges
-        )
+      ? num(gtaRow.gtaCharges)
       : 0;
 
   const sellerPrice =
     sp - gta;
 
-  /* STEP 3 */
   comm =
     findCommercial(
       product.brand,
@@ -125,7 +120,6 @@ export function evaluatePrice(
   const collectionFee =
     CONFIG.COSTS.COLLECTION_FEE;
 
-  /* SELLER SIDE */
   const commissionRs =
     sellerPrice *
     commissionPct /
@@ -138,8 +132,7 @@ export function evaluatePrice(
 
   const taxOnComFixed =
     gstBase *
-    CONFIG.TAX
-      .GST_PERCENT /
+    CONFIG.TAX.GST_PERCENT /
     100;
 
   const uploadSettlement =
@@ -149,18 +142,14 @@ export function evaluatePrice(
     collectionFee -
     taxOnComFixed;
 
-  /* FIXED:
-     TDS/TCS ON SELLER PRICE */
   const tds =
     sellerPrice *
-    CONFIG.TAX
-      .TDS_PERCENT /
+    CONFIG.TAX.TDS_PERCENT /
     100;
 
   const tcs =
     sellerPrice *
-    CONFIG.TAX
-      .TCS_PERCENT /
+    CONFIG.TAX.TCS_PERCENT /
     100;
 
   const tdsTcs =
@@ -170,10 +159,6 @@ export function evaluatePrice(
     uploadSettlement -
     tdsTcs;
 
-  /* CUSTOMER SIDE */
-
-  /* FIXED:
-     GST ON ROYALTY */
   const royaltyBase =
     sp *
     royaltyPct /
@@ -182,12 +167,8 @@ export function evaluatePrice(
   const royalty =
     royaltyBase *
     (1 +
-      CONFIG.TAX
-        .GST_PERCENT /
-        100);
+      CONFIG.TAX.GST_PERCENT / 100);
 
-  /* FIXED:
-     GST ON MARKETING */
   const marketingBase =
     sp *
     marketingPct /
@@ -196,9 +177,7 @@ export function evaluatePrice(
   const marketing =
     marketingBase *
     (1 +
-      CONFIG.TAX
-        .GST_PERCENT /
-        100);
+      CONFIG.TAX.GST_PERCENT / 100);
 
   const rebate = 0;
 
@@ -208,34 +187,23 @@ export function evaluatePrice(
     marketing -
     rebate;
 
-  /* CODB */
   const dispatchCost =
     getDispatchCost(sp);
 
   const returnCharge =
-    CONFIG.COSTS
-      .RETURN_CHARGE;
+    CONFIG.COSTS.RETURN_CHARGE;
 
   const returnCost =
-    (fixedFee +
-      returnCharge) *
+    (fixedFee + returnCharge) *
     (1 +
-      CONFIG.TAX
-        .GST_PERCENT /
-        100);
+      CONFIG.TAX.GST_PERCENT / 100);
 
   const rawRtv =
-    (
-      returnCost *
-      rtvPct
-    ) /
+    (returnCost * rtvPct) /
     (100 - rtvPct);
 
   const rtvCodb =
-    Math.min(
-      rawRtv,
-      returnCost
-    );
+    Math.min(rawRtv, returnCost);
 
   const payoutAfterCodb =
     payoutBeforeCodb -
@@ -243,37 +211,26 @@ export function evaluatePrice(
     rtvCodb;
 
   const tpProfitRs =
-    payoutAfterCodb -
-    tp;
+    payoutAfterCodb - tp;
 
   const tpProfitPct =
     tp > 0
-      ? (
-          tpProfitRs /
-          tp
-        ) * 100
+      ? (tpProfitRs / tp) * 100
       : 0;
 
   return {
-    erpSku:
-      product.erpSku,
-    styleId:
-      product.styleId,
-    brand:
-      product.brand,
-    articleType:
-      product.articleType,
-    status:
-      product.status,
+    erpSku: product.erpSku,
+    styleId: product.styleId,
+    brand: product.brand,
+    articleType: product.articleType,
+    status: product.status,
 
-    mrp:
-      num(product.mrp),
+    mrp: num(product.mrp),
     tp,
 
     sp,
     gta,
-    listPrice:
-      sellerPrice,
+    listPrice: sellerPrice,
 
     commissionPct,
     commissionRs,
@@ -315,33 +272,22 @@ function getDispatchCost(sp) {
 
 function applyRounding(v) {
   const mode =
-    CONFIG.ROUNDING
-      ?.MODE || "INT";
+    CONFIG.ROUNDING?.MODE || "INT";
 
   if (mode === "9") {
     return roundToNext9(v);
   }
 
-  return Math.round(
-    num(v)
-  );
+  return Math.round(num(v));
 }
 
 function roundToNext9(v) {
-  const n =
-    Math.ceil(
-      num(v)
-    );
+  const n = Math.ceil(num(v));
 
   const base =
-    Math.floor(
-      n / 10
-    ) *
-      10 +
-    9;
+    Math.floor(n / 10) * 10 + 9;
 
-  if (base >= n)
-    return base;
+  if (base >= n) return base;
 
   return base + 10;
 }
