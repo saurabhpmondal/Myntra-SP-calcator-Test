@@ -1,11 +1,11 @@
 // js/pricing-engine.js
 
-import { CONFIG, num } from "./config.js";
+import { CONFIG, num } from "./core/config.js";
 import {
   findCommercial,
   findGta,
   getRtv
-} from "./normalizer.js";
+} from "./core/normalizer.js";
 
 /* ----------------------------------
    PUBLIC
