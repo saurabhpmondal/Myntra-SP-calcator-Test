@@ -17,7 +17,7 @@ export function initMrpEngine() {
     ?.addEventListener("click", downloadCsv);
 }
 
-/* ---------------- UPLOAD ---------------- */
+/* UPLOAD */
 function handleUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -42,20 +42,17 @@ function handleUpload(e) {
 
     renderPreview(uploadedData);
 
-    /* RESET OUTPUT UI */
-    clearOutput();
-
     generatedOutput = [];
-    document.getElementById("downloadMrpBtn").disabled = true;
+
+    document.getElementById("mrpOutputCard").style.display = "none";
   };
 
   reader.readAsText(file);
 }
 
-/* ---------------- PREVIEW TABLE ---------------- */
+/* PREVIEW */
 function renderPreview(data) {
   const body = document.getElementById("mrpPreviewBody");
-  if (!body) return;
 
   if (!data.length) {
     body.innerHTML =
@@ -72,7 +69,7 @@ function renderPreview(data) {
   `).join("");
 }
 
-/* ---------------- GENERATE ---------------- */
+/* GENERATE */
 function generateMrp() {
 
   const target =
@@ -106,51 +103,14 @@ function generateMrp() {
     });
   });
 
-  renderOutputTable(generatedOutput);
-
-  document.getElementById("downloadMrpBtn").disabled = false;
+  renderOutput();
 }
 
-/* ---------------- OUTPUT TABLE (NEW) ---------------- */
-function renderOutputTable(data) {
+/* OUTPUT TABLE */
+function renderOutput() {
+  const body = document.getElementById("mrpResultBody");
 
-  let container =
-    document.getElementById("mrpOutputWrap");
-
-  /* Create if not exists */
-  if (!container) {
-    container = document.createElement("div");
-    container.id = "mrpOutputWrap";
-    container.className = "card";
-
-    container.innerHTML = `
-      <div class="card-title">Generated MRP</div>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>SKU</th>
-              <th>Brand</th>
-              <th>TP</th>
-              <th>MRP</th>
-            </tr>
-          </thead>
-          <tbody id="mrpOutputBody"></tbody>
-        </table>
-      </div>
-    `;
-
-    document
-      .getElementById("mrpTab")
-      ?.appendChild(container);
-  }
-
-  const body =
-    document.getElementById("mrpOutputBody");
-
-  if (!body) return;
-
-  body.innerHTML = data.map(r => `
+  body.innerHTML = generatedOutput.map(r => `
     <tr>
       <td>${r.sku}</td>
       <td>${r.brand}</td>
@@ -158,20 +118,12 @@ function renderOutputTable(data) {
       <td><b>${r.mrp}</b></td>
     </tr>
   `).join("");
+
+  document.getElementById("mrpOutputCard").style.display = "block";
 }
 
-/* ---------------- CLEAR OUTPUT ---------------- */
-function clearOutput() {
-  const el =
-    document.getElementById("mrpOutputWrap");
-
-  if (el) el.remove();
-}
-
-/* ---------------- DOWNLOAD ---------------- */
+/* DOWNLOAD */
 function downloadCsv() {
-
-  if (!generatedOutput.length) return;
 
   const csv =
     "sku,brand,tp,mrp\n" +
