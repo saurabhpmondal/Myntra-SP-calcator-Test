@@ -5,7 +5,7 @@ import {
   CONFIG,
   num,
   text
-} from "./config.js";
+} from "./core/config.js";
 
 /* ----------------------------------
    PUBLIC
