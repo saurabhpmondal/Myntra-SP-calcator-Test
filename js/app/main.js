@@ -22,7 +22,10 @@ let summaryLoaded = false;
 /* ----------------------------------
    INIT
 -----------------------------------*/
-document.addEventListener("DOMContentLoaded", initApp);
+document.addEventListener(
+  "DOMContentLoaded",
+  initApp
+);
 
 async function initApp() {
   bindTabs();
@@ -30,7 +33,9 @@ async function initApp() {
 
   initCalculator();
   initExport();
-  initMrpEngine(); // ✅ MRP MODULE
+
+  /* ✅ CRITICAL FIX */
+  initMrpEngine();
 
   await refreshApp();
 }
@@ -62,19 +67,8 @@ async function refreshApp() {
 -----------------------------------*/
 function bindControls() {
 
-  document.getElementById("generatePricingBtn")
-    ?.addEventListener("click", () => {
-      STORE.ui.rowLimit = 50;
-      renderPricingTable();
-      pricingLoaded = true;
-      lastRenderKey = getRenderKey();
-    });
-
-  document.getElementById("loadMoreBtn")
-    ?.addEventListener("click", () => {
-      STORE.ui.rowLimit += 50;
-      renderPricingTable();
-    });
+  document.getElementById("refreshBtn")
+    ?.addEventListener("click", refreshApp);
 
   document.getElementById("brandFilter")
     ?.addEventListener("change", rerenderAll);
@@ -85,13 +79,29 @@ function bindControls() {
   document.getElementById("pricingMode")
     ?.addEventListener("change", e => {
       const value = e.target.value || "INT";
+
       CONFIG.ROUNDING.MODE = value;
       STORE.ui.pricingMode = value;
+
       rerenderAll();
     });
 
-  document.getElementById("refreshBtn")
-    ?.addEventListener("click", refreshApp);
+  document.getElementById("loadMoreBtn")
+    ?.addEventListener("click", () => {
+      STORE.ui.rowLimit += 50;
+      renderPricingTable();
+    });
+
+  /* ✅ GENERATE PRICING BUTTON */
+  document.getElementById("generatePricingBtn")
+    ?.addEventListener("click", () => {
+      STORE.ui.rowLimit = 50;
+
+      renderPricingTable();
+
+      pricingLoaded = true;
+      lastRenderKey = getRenderKey();
+    });
 }
 
 /* ----------------------------------
@@ -108,16 +118,24 @@ function rerenderAll() {
     lastRenderKey = getRenderKey();
   }
 
-  if (summaryLoaded && STORE.ui.activeTab === "summary") {
+  if (
+    summaryLoaded &&
+    STORE.ui.activeTab === "summary"
+  ) {
     renderBrandSummary();
     summaryRenderKey = getRenderKey();
   }
 }
 
 function getRenderKey() {
-  const brand = document.getElementById("brandFilter")?.value || "";
-  const target = document.getElementById("profitTarget")?.value || "5";
-  const mode = CONFIG.ROUNDING.MODE || "INT";
+  const brand =
+    document.getElementById("brandFilter")?.value || "";
+
+  const target =
+    document.getElementById("profitTarget")?.value || "5";
+
+  const mode =
+    CONFIG.ROUNDING.MODE || "INT";
 
   return [brand, target, mode].join("|");
 }
@@ -130,10 +148,15 @@ function fillBrands() {
     ...new Set(
       STORE.normalized.products.map(x => x.brand)
     )
-  ].filter(Boolean).sort();
+  ]
+    .filter(Boolean)
+    .sort();
 
-  const brandFilter = document.getElementById("brandFilter");
-  const manualBrand = document.getElementById("manualBrand");
+  const brandFilter =
+    document.getElementById("brandFilter");
+
+  const manualBrand =
+    document.getElementById("manualBrand");
 
   if (brandFilter) {
     brandFilter.innerHTML =
@@ -153,15 +176,18 @@ function fillTargets() {
   if (!el) return;
 
   el.innerHTML =
-    CONFIG.TARGET_OPTIONS.map(opt => `
-      <option value="${opt.value}">
-        ${opt.label}
-      </option>
-    `).join("");
+    CONFIG.TARGET_OPTIONS.map(opt => {
+      const selected =
+        String(opt.value) === "5" ? "selected" : "";
+
+      return `<option value="${opt.value}" ${selected}>${opt.label}</option>`;
+    }).join("");
 }
 
 function syncPricingModeUi() {
-  const mode = document.getElementById("pricingMode");
+  const mode =
+    document.getElementById("pricingMode");
+
   if (!mode) return;
 
   const current =
@@ -191,15 +217,19 @@ function bindTabs() {
 
       btn.classList.add("active");
 
-      document
-        .getElementById(key + "Tab")
+      document.getElementById(key + "Tab")
         ?.classList.add("active");
 
       STORE.ui.activeTab = key;
 
-      if (key === "summary" && pricingLoaded) {
-        renderBrandSummary();
-        summaryLoaded = true;
+      const renderKey = getRenderKey();
+
+      if (key === "summary") {
+        if (!summaryLoaded || summaryRenderKey !== renderKey) {
+          renderBrandSummary();
+          summaryLoaded = true;
+          summaryRenderKey = renderKey;
+        }
       }
     });
   });
