@@ -1,7 +1,7 @@
 // js/export.js
 
-import { showToast } from "./config.js";
-import { getVisibleRows } from "./table.js";
+import { showToast } from "./core/config.js";
+import { getVisibleRows } from "./pricing/table.js";
 
 /* ----------------------------------
    INIT
